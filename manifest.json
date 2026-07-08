@@ -1,6 +1,6 @@
 {
   "name": "Film Roll Batch Management",
-  "short_name": "BM",
+  "short_name": "BMS",
   "description": "Film Roll Batch Management System",
   "start_url": "https://superb-lamington-b4449e.netlify.app/",
   "display": "standalone",
