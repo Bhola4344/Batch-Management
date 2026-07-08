@@ -2,7 +2,7 @@
   "name": "Film Roll Batch Management",
   "short_name": "BM",
   "description": "Film Roll Batch Management System",
-  "start_url": "./index.html",
+  "start_url": "https://superb-lamington-b4449e.netlify.app/",
   "display": "standalone",
   "background_color": "#f5f6fa",
   "theme_color": "#101f42",
