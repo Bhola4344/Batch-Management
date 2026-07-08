@@ -13,21 +13,21 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
     :root {
-      --bg: #f5f6fa;
+      --bg: #f0f4ff;
       --surface: #fff;
-      --surface2: #f0f2f8;
-      --surface3: #e8eaf2;
-      --border: #d1d5e0;
-      --accent: #4f6ef7;
-      --accent2: #0284c7;
-      --green: #16a34a;
-      --yellow: #d97706;
-      --red: #dc2626;
-      --purple: #7c3aed;
-      --orange: #ea580c;
-      --text: #1e2130;
-      --text2: #4b5563;
-      --text3: #9ca3af;
+      --surface2: #eef2ff;
+      --surface3: #e0e7ff;
+      --border: #c7d2fe;
+      --accent: #6366f1;
+      --accent2: #06b6d4;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --orange: #f97316;
+      --text: #1e1b3a;
+      --text2: #4c4a6e;
+      --text3: #94a3c4;
       --radius: 10px;
       --mono: 'JetBrains Mono', monospace
     }
@@ -47,7 +47,7 @@
     }
 
     .header {
-      background: var(--surface);
+      background: linear-gradient(90deg, #4f46e5, #6366f1, #06b6d4);
       border-bottom: 1px solid var(--border);
       padding: 0 24px;
       display: flex;
@@ -57,7 +57,8 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, .06)
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+      color: #fff
     }
 
     .logo {
@@ -71,7 +72,7 @@
     .logo-icon {
       width: 32px;
       height: 32px;
-      background: #4f6ef7;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
       border-radius: 8px;
       display: flex;
       align-items: center;
@@ -84,7 +85,7 @@
       align-items: center;
       gap: 6px;
       font-size: 12px;
-      color: var(--text2)
+      color: #fff
     }
 
     .gs-dot {
@@ -104,51 +105,145 @@
       background: var(--red)
     }
 
-    .tabs {
+    .side-tab-btn {
+      position: fixed;
+      left: 0;
+      top: 64px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: #fff;
+      border: none;
+      border-radius: 0 10px 10px 0;
+      padding: 12px 8px;
+      cursor: pointer;
       display: flex;
-      gap: 2px;
-      padding: 16px 24px 0;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-      position: sticky;
-      top: 56px;
-      z-index: 99;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, .04)
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      z-index: 97;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, .15);
+      transition: all .2s;
     }
 
-    .tab {
-      padding: 10px 18px;
-      border-radius: var(--radius) var(--radius) 0 0;
+    .side-tab-btn:hover {
+      padding-left: 10px;
+      background: linear-gradient(135deg, #4f46e5, #9333ea);
+    }
+
+    .side-tab-btn {
+      padding: 12px 8px;
+      border-radius: 0 10px 10px 0;
+    }
+
+    .side-tab-icon {
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+    }
+
+    .side-tab-text {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+    }
+
+    @media (max-width: 640px) {
+      .side-tab-btn {
+        padding: 10px 4px;
+      }
+
+      .side-tab-icon {
+        font-size: 14px;
+      }
+
+      .side-tab-text {
+        font-size: 8px;
+      }
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .4);
+      z-index: 998;
+    }
+
+    .sidebar-overlay.show {
+      display: block;
+    }
+
+    .sidebar-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 240px;
+      background: linear-gradient(180deg, #ffffff 0%, #e0e7ff 50%, #ede9fe 100%);
+      border-right: 1px solid var(--border);
+      box-shadow: 4px 0 20px rgba(0, 0, 0, .12);
+      z-index: 999;
+      transform: translateX(-100%);
+      transition: transform .25s ease;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      overflow-y: auto;
+    }
+
+    .sidebar-menu.open {
+      transform: translateX(0);
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px;
+      font-weight: 700;
+      font-size: 14px;
+      background: linear-gradient(90deg, #4f46e5, #7c3aed, #06b6d4);
+      color: #fff;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-close {
+      cursor: pointer;
+      color: #fff;
+      font-size: 18px;
+    }
+
+    .sidebar-menu .tab {
+      padding: 14px 18px;
       cursor: pointer;
       font-weight: 500;
-      color: var(--text3);
-      border: 1px solid transparent;
-      border-bottom: none;
-      transition: all .2s;
-      background: transparent;
-      font-size: 13px
-    }
-
-    .tab:hover {
       color: var(--text2);
-      background: var(--surface2)
+      border-bottom: 1px solid var(--border);
+      transition: all .15s;
+      background: transparent;
+      font-size: 13.5px;
     }
 
-    .tab.active {
+    .sidebar-menu .tab:hover {
+      background: var(--surface2);
+    }
+
+    .sidebar-menu .tab.active {
       color: var(--accent);
-      background: var(--bg);
-      border-color: var(--border);
-      position: relative
+      background: linear-gradient(90deg, #eef2ff, #e0e7ff);
+      border-right: 3px solid var(--accent);
+      font-weight: 600;
     }
 
-    .tab.active::after {
-      content: '';
-      position: absolute;
-      bottom: -1px;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: var(--bg)
+    @media (max-width: 640px) {
+      .sidebar-menu {
+        width: 78%;
+        max-width: 280px;
+      }
     }
 
     .main {
@@ -158,6 +253,7 @@
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
       border-radius: var(--radius);
       padding: 20px;
       margin-bottom: 20px;
@@ -256,7 +352,7 @@
     }
 
     .btn-primary {
-      background: var(--accent);
+      background: linear-gradient(135deg, var(--accent), #4f46e5);
       color: #fff
     }
 
@@ -272,7 +368,7 @@
     }
 
     .btn-danger {
-      background: var(--red);
+      background: linear-gradient(135deg, #ef4444, #dc2626);
       color: #fff
     }
 
@@ -424,8 +520,8 @@
     }
 
     thead th {
-      background: var(--surface2);
-      color: var(--text2);
+      background: linear-gradient(90deg, #eef2ff, #e0e7ff);
+      color: var(--accent);
       font-weight: 600;
       padding: 10px 12px;
       text-align: left;
@@ -522,6 +618,12 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
       margin-bottom: 18px
+    }
+
+    .stock-item {
+      background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+      border-radius: 10px;
+      padding: 10px 14px
     }
 
     .stock-item label {
@@ -975,10 +1077,14 @@
       }
 
       .header {
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         height: auto;
         padding: 10px 14px;
         gap: 8px;
+      }
+
+      .logo {
+        font-size: 13px;
       }
 
       .gs-status span {
@@ -1054,7 +1160,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #eef1fb 0%, #f5f6fa 50%, #eef2ff 100%)
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #06b6d4 100%)
     }
 
     .login-card {
@@ -1191,14 +1297,20 @@
         <div class="gs-status">
           <div class="gs-dot" id="gsDot"></div><span id="gsStatusText">Sheets: Not Connected</span>
         </div>
-        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="refreshFromSheet()">🔄
-          Refresh</button>
         <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="forceLogout()">🚪
           Logout</button>
       </div>
     </div>
 
-    <div class="tabs">
+    <button class="side-tab-btn" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Menu">
+      <span class="side-tab-icon">›</span>
+    </button>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    <div class="sidebar-menu" id="sidebarMenu">
+      <div class="sidebar-header">
+        <span>Menu</span>
+        <span class="sidebar-close" onclick="closeSidebar()">✕</span>
+      </div>
       <div class="tab active" onclick="switchTab('receiving')">📥 Receiving</div>
       <div class="tab" onclick="switchTab('issue')">📤 Issue</div>
       <div class="tab" onclick="switchTab('rejected')">❌ Rejected</div>
@@ -1530,6 +1642,7 @@
     <!-- ═══ REJECTED DETAILS TAB ═══ -->
     <div class="tab-panel" id="tab-rejected">
       <div class="main">
+
         <div class="card">
           <div class="card-title">❌ Rejected Batch List <span id="rejectedCount"
               style="color:var(--red);font-size:12px;margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600"></span>
@@ -1654,7 +1767,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
 
   <script>
-    const CONFIG = { WEBAPP_URL: 'https://script.google.com/macros/s/AKfycby57LrS_CS82tAjcpz2zq67kL7MpsSBuH-Ew62mWeBrH5gOL0hU1r9LCmXd2kyxJuacwQ/exec', API_TOKEN: 'a8f3k9x2m4p7q1w5e6r8t3y9u2i4o7' };
+    const CONFIG = { WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbxp_uF4uHxDDdEyFnuLZ_INaYbyfhHqWd54xGNlV3l3PPjZxok103jiBYwGKXpD3cQqnQ/exec', API_TOKEN: 'a8f3k9x2m4p7q1w5e6r8t3y9u2i4o7' };
     let receiving = [], issues = [], editIndex = null, editIssueIndex = null, isSaving = false, pendingPartyIdx = null, pendingCancelIssueIdx = null;
     let sessionToken = null, idleTimer = null;
     const PAGE_SIZE = 5;
@@ -1850,6 +1963,20 @@
       dot.className = 'gs-dot' + (ok ? ' connected' : err ? ' error' : '');
       tx.textContent = ok ? 'Sheets: Connected ✓' : err ? 'Sheets: Error' : 'Sheets: Not Connected';
     }
+
+    function openSidebar() {
+      document.getElementById('sidebarMenu').classList.add('open');
+      document.getElementById('sidebarOverlay').classList.add('show');
+    }
+    function closeSidebar() {
+      document.getElementById('sidebarMenu').classList.remove('open');
+      document.getElementById('sidebarOverlay').classList.remove('show');
+    }
+    function toggleSidebar() {
+      const menu = document.getElementById('sidebarMenu');
+      menu.classList.contains('open') ? closeSidebar() : openSidebar();
+    }
+
     function switchTab(name) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -1858,6 +1985,7 @@
       document.getElementById('tab-' + name).classList.add('active');
       if (name === 'issue') populateSapDropdown();
       if (name === 'rejected') renderRejectedTable();
+      closeSidebar();
     }
     function setTodayDates() { const d = todayStr(); document.getElementById('recDate').value = d; document.getElementById('issueDate').value = d }
     function getNextBatchNo() {
