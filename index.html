@@ -278,6 +278,18 @@
       gap: 14px
     }
 
+    .settings-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .settings-form .form-group {
+      width: 100%;
+    }
+
     .form-group {
       display: flex;
       flex-direction: column;
@@ -766,7 +778,7 @@
       position: fixed;
       top: 24px;
       right: 24px;
-      z-index: 999;
+      z-index: 2100;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -1253,11 +1265,11 @@
     }
 
     .btn-logout {
-      background: linear-gradient(135deg, #f43f5e, #dc2626);
+      background: linear-gradient(135deg, #fb923c, #ea580c);
       color: #fff;
       border: none;
       font-weight: 600;
-      box-shadow: 0 2px 10px rgba(220, 38, 38, .45);
+      box-shadow: 0 2px 8px rgba(234, 88, 12, .3);
       transition: all .2s cubic-bezier(.34, 1.56, .64, 1);
       position: relative;
       overflow: hidden;
@@ -1270,14 +1282,14 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(120deg, transparent, rgba(255, 255, 255, .35), transparent);
+      background: linear-gradient(120deg, transparent, rgba(255, 255, 255, .3), transparent);
       transition: left .5s;
     }
 
     .btn-logout:hover {
-      background: linear-gradient(135deg, #dc2626, #991b1b);
-      transform: translateY(-2px) scale(1.04);
-      box-shadow: 0 6px 18px rgba(220, 38, 38, .55);
+      background: linear-gradient(135deg, #ea580c, #c2410c);
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 5px 14px rgba(234, 88, 12, .4);
     }
 
     .btn-logout:hover::before {
@@ -1286,7 +1298,6 @@
 
     .btn-logout:active {
       transform: translateY(0) scale(.97);
-      box-shadow: 0 2px 6px rgba(220, 38, 38, .4);
     }
 
     .btn-logout span.logout-icon {
@@ -1328,9 +1339,6 @@
         <input type="checkbox" id="rememberMe">
         <span>Remember me on this device</span>
       </label>
-
-      <div id="loginError" class="login-error"></div>
-
       <button class="btn btn-primary login-btn" id="loginBtn" onclick="doLogin()">Login</button>
     </div>
   </div>
@@ -1364,6 +1372,7 @@
       <div class="tab" onclick="switchTab('issue')">📤 Issue</div>
       <div class="tab" onclick="switchTab('rejected')">❌ Rejected</div>
       <div class="tab" onclick="switchTab('report')">📊 Report</div>
+      <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
     </div>
 
     <div class="toast-wrap" id="toastWrap"></div>
@@ -1812,11 +1821,52 @@
       </div>
     </div>
 
+    <!-- ═══ SETTINGS TAB ═══ -->
+    <div class="tab-panel" id="tab-settings">
+      <div class="main">
+        <div class="card">
+          <div class="card-title">⚙️ Account Settings</div>
+
+          <div style="max-width:420px;margin:0 auto">
+            <div class="settings-form">
+              <div class="form-group">
+                <label>New Username</label>
+                <input type="text" id="newUsername" placeholder="Leave blank to keep same">
+              </div>
+              <div class="form-group">
+                <label>Current Password</label>
+                <div class="pass-wrap">
+                  <input type="password" id="currentPassword" placeholder="Required to confirm">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>New Password</label>
+                <div class="pass-wrap">
+                  <input type="password" id="newPassword" placeholder="Leave blank to keep same">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Confirm New Password</label>
+                <div class="pass-wrap">
+                  <input type="password" id="confirmNewPassword" placeholder="Re-enter new password">
+                </div>
+              </div>
+            </div>
+            <div class="btn-row" style="justify-content:flex-end">
+              <button class="btn btn-primary" id="saveSettingsBtn" onclick="saveAccountSettings()">💾 Update
+                Credentials</button>
+              <button class="btn btn-secondary" onclick="clearSettingsForm()">🔄 Clear</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- end appRoot -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
 
   <script>
-    const CONFIG = { WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbxp_uF4uHxDDdEyFnuLZ_INaYbyfhHqWd54xGNlV3l3PPjZxok103jiBYwGKXpD3cQqnQ/exec', API_TOKEN: 'a8f3k9x2m4p7q1w5e6r8t3y9u2i4o7' };
+    const CONFIG = { WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbxiO8lBnZLT3T-rlXG0RDwn9RDkmWX0SpvcWCgqjyqiVYpHCCnlfQ2HFbS8yd1xDU-xFg/exec', API_TOKEN: 'a8f3k9x2m4p7q1w5e6r8t3y9u2i4o7' };
     let receiving = [], issues = [], editIndex = null, editIssueIndex = null, isSaving = false, pendingPartyIdx = null, pendingCancelIssueIdx = null;
     let sessionToken = null, idleTimer = null;
     const PAGE_SIZE = 5;
@@ -1908,13 +1958,10 @@
       const username = document.getElementById('loginUser').value.trim();
       const password = document.getElementById('loginPass').value;
       const remember = document.getElementById('rememberMe').checked;
-      const errEl = document.getElementById('loginError');
       const btn = document.getElementById('loginBtn');
-      errEl.style.display = 'none';
 
       if (!username || !password) {
-        errEl.textContent = '❌ Username aur password bharo';
-        errEl.style.display = 'block';
+        showToast('❌ Username aur password bharo', 'error');
         return;
       }
 
@@ -1941,12 +1988,10 @@
           resetIdleTimer();
           setTodayDates(); setBatchNo(); applyTableVisibility(); refreshFromSheet(true);
         } else {
-          errEl.textContent = '❌ Galat username ya password';
-          errEl.style.display = 'block';
+          showToast('❌ Galat username ya password', 'error');
         }
       } catch (e) {
-        errEl.textContent = '❌ Network error: ' + e.message;
-        errEl.style.display = 'block';
+        showToast('❌ Network error: ' + e.message, 'error');
       } finally {
         btn.disabled = false;
         if (btn.textContent !== '✅ Success') btn.textContent = 'Login';
@@ -2029,7 +2074,7 @@
     function switchTab(name) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      const idx = { receiving: 0, issue: 1, rejected: 2, report: 3 }[name];
+      const idx = { receiving: 0, issue: 1, rejected: 2, report: 3, settings: 4 }[name];
       document.querySelectorAll('.tab')[idx].classList.add('active');
       document.getElementById('tab-' + name).classList.add('active');
       if (name === 'issue') populateSapDropdown();
@@ -2333,6 +2378,48 @@
         closeModal('editIssueModal');
         showToast('✅ Issue update hui');
       }
+    }
+
+    async function saveAccountSettings() {
+      if (isSaving) { showToast('⏳ Wait karo', 'warn'); return }
+      const newUsername = document.getElementById('newUsername').value.trim();
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+      const alertEl = document.getElementById('settingsAlert');
+
+      function showSettingsAlert(msg, type) {
+        showToast(msg, type === 'error' ? 'error' : 'success');
+      }
+
+      if (!currentPassword) { showSettingsAlert('❌ Current password daalo', 'error'); return; }
+      if (!newUsername && !newPassword) { showSettingsAlert('❌ Naya username ya password mein se kam se kam ek daalo', 'error'); return; }
+      if (newPassword && newPassword !== confirmNewPassword) { showSettingsAlert('❌ New Password aur Confirm Password match nahi kar rahe', 'error'); return; }
+      if (newPassword && newPassword.length < 4) { showSettingsAlert('❌ Naya password kam se kam 4 characters ka hona chahiye', 'error'); return; }
+
+      const btn = document.getElementById('saveSettingsBtn');
+      isSaving = true; btn.disabled = true; btn.textContent = '⏳ Updating...';
+
+      try {
+        const resp = await apiCall('updateCredentials', { currentPassword, newUsername, newPassword });
+        if (resp.status === 'ok') {
+          showSettingsAlert('✅ Credentials update ho gaye', 'info');
+          showToast('✅ Account settings update ho gayi');
+          if (newUsername) sessionStorage.setItem('username', resp.username);
+          clearSettingsForm(false);
+        } else {
+          showSettingsAlert('❌ ' + (resp.msg || 'Update fail hua'), 'error');
+        }
+      } catch (e) {
+        showSettingsAlert('❌ Network error: ' + e.message, 'error');
+      } finally {
+        isSaving = false; btn.disabled = false; btn.textContent = '💾 Update Credentials';
+      }
+    }
+
+    function clearSettingsForm(clearAlert = true) {
+      ['newUsername', 'currentPassword', 'newPassword', 'confirmNewPassword'].forEach(id => document.getElementById(id).value = '');
+      if (clearAlert) document.getElementById('settingsAlert').classList.remove('show');
     }
 
     function openCancelIssue(idx) {
