@@ -1368,8 +1368,9 @@
         <span>Menu</span>
         <span class="sidebar-close" onclick="closeSidebar()">✕</span>
       </div>
-      <div class="tab active" onclick="switchTab('receiving')">📥 Receiving</div>
-      <div class="tab" onclick="switchTab('issue')">📤 Issue</div>
+      <div class="tab active" onclick="switchTab('issue')">📤 Issue</div>
+      <div class="tab" onclick="switchTab('receiving')">📥 Receiving</div>
+      <div class="tab" onclick="switchTab('iqc')">🔬 Under IQC</div>
       <div class="tab" onclick="switchTab('rejected')">❌ Rejected</div>
       <div class="tab" onclick="switchTab('report')">📊 Report</div>
       <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
@@ -1440,6 +1441,19 @@
       </div>
     </div>
 
+    <!-- IQC Status Change Modal -->
+    <div class="modal-overlay" id="iqcStatusModal">
+      <div class="party-modal">
+        <div class="modal-title">🔬 Confirm Status Change <span class="modal-close"
+            onclick="closeModal('iqcStatusModal')">✕</span></div>
+        <div id="iqcStatusFormContent"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="confirmIQCStatusBtn" onclick="confirmIQCStatusChange()">✅ Confirm</button>
+          <button class="btn btn-secondary" onclick="closeModal('iqcStatusModal')">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Status Warning Modal -->
     <div class="modal-overlay" id="statusWarnModal">
       <div class="party-modal">
@@ -1470,7 +1484,7 @@
     </div>
 
     <!-- ═══ RECEIVING TAB ═══ -->
-    <div class="tab-panel active" id="tab-receiving">
+    <div class="tab-panel" id="tab-receiving">
       <div class="main">
         <div class="card">
           <div class="card-title">📥 New Receiving Entry</div>
@@ -1568,8 +1582,50 @@
       </div>
     </div>
 
+    <!-- ═══ UNDER IQC TAB ═══ -->
+    <div class="tab-panel" id="tab-iqc">
+      <div class="main">
+        <div class="card">
+          <div class="card-title">🔬 Under IQC (Testing) <span id="iqcCount"
+              style="color:var(--accent2);font-size:12px;margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600"></span>
+          </div>
+          <div class="search-bar">
+            <div class="form-group"><label>Search</label><input type="text" id="iqcSearch"
+                placeholder="Batch / SAP / Description / Qty..." oninput="renderIQCTable()"></div>
+            <div class="form-group"><label>Date From</label><input type="text" id="iqcDateFrom" placeholder="dd-mm-yyyy"
+                maxlength="10" oninput="autoDateSlash(this);renderIQCTable()"></div>
+            <div class="form-group"><label>Date To</label><input type="text" id="iqcDateTo" placeholder="dd-mm-yyyy"
+                maxlength="10" oninput="autoDateSlash(this);renderIQCTable()"></div>
+            <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;margin-bottom:1px"
+              onclick="clearIQCSearch()">✕ Clear</button>
+          </div>
+          <div id="alertIQC" class="alert alert-info show">ℹ️ Koi batch Testing status me nahi hai.</div>
+          <div class="table-wrap" id="iqcTableWrap" style="display:none">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Rec. Date</th>
+                  <th>Doc No</th>
+                  <th>Batch</th>
+                  <th>SAP Code</th>
+                  <th>Description</th>
+                  <th>Qty(Kg)</th>
+                  <th>Roll(Nos)</th>
+                  <th>Location</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="iqcBody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="iqcPagination"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- ═══ ISSUE TAB ═══ -->
-    <div class="tab-panel" id="tab-issue">
+    <div class="tab-panel active" id="tab-issue">
       <div class="main">
         <div class="card">
           <div class="card-title">📤 Issue / Dispatch Form</div>
@@ -1867,10 +1923,10 @@
 
   <script>
     const CONFIG = { WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbxiO8lBnZLT3T-rlXG0RDwn9RDkmWX0SpvcWCgqjyqiVYpHCCnlfQ2HFbS8yd1xDU-xFg/exec', API_TOKEN: 'a8f3k9x2m4p7q1w5e6r8t3y9u2i4o7' };
-    let receiving = [], issues = [], editIndex = null, editIssueIndex = null, isSaving = false, pendingPartyIdx = null, pendingCancelIssueIdx = null;
+    let receiving = [], issues = [], editIndex = null, editIssueIndex = null, isSaving = false, pendingPartyIdx = null, pendingCancelIssueIdx = null, pendingIQCIdx = null, pendingIQCStatus = null;
     let sessionToken = null, idleTimer = null;
     const PAGE_SIZE = 5;
-    let recPage = 1, issuePage = 1, rejPage = 1;
+    let recPage = 1, issuePage = 1, rejPage = 1, iqcPage = 1;
     function sanitize(s) { return String(s).replace(/[<>"'&;]/g, '').substring(0, 200) }
     function escapeHtml(s) {
       return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -2036,7 +2092,7 @@
         issues = (resp.issues || []).map(normalizeIssue);
         receiving = recalcRemaining(receiving, issues);
         updateGsStatus(true);
-        renderReceivingTable(); renderIssueTable(); renderRejectedTable(); populateSapDropdown(); setBatchNo();
+        renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable(); populateSapDropdown(); setBatchNo();
         if (!initial) showToast('✅ Data refreshed — ' + receiving.length + ' receiving, ' + issues.length + ' issues');
       } catch (e) { updateGsStatus(false, true); showToast('❌ Sheet reach nahi ho rahi: ' + e.message, 'error') }
       finally { hideLoader() }
@@ -2074,10 +2130,11 @@
     function switchTab(name) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      const idx = { receiving: 0, issue: 1, rejected: 2, report: 3, settings: 4 }[name];
+      const idx = { issue: 0, receiving: 1, iqc: 2, rejected: 3, report: 4, settings: 5 }[name];
       document.querySelectorAll('.tab')[idx].classList.add('active');
       document.getElementById('tab-' + name).classList.add('active');
       if (name === 'issue') populateSapDropdown();
+      if (name === 'iqc') renderIQCTable();
       if (name === 'rejected') renderRejectedTable();
       closeSidebar();
     }
@@ -2137,7 +2194,7 @@
       isSaving = true; btn.disabled = true; btn.textContent = '⏳ Saving...';
       const ok = await persist(newR, issues, 'Entry sheet mein save ho rahi hai...');
       isSaving = false; btn.disabled = false; btn.textContent = '➕ Add Entry';
-      if (ok) { receiving = newR; renderReceivingTable(); renderRejectedTable(); populateSapDropdown(); clearForm(); showToast('✅ Entry add hui — Batch ' + batchNo) }
+      if (ok) { receiving = newR; renderReceivingTable(); renderRejectedTable(); renderIQCTable(); populateSapDropdown(); clearForm(); showToast('✅ Entry add hui — Batch ' + batchNo) }
     }
 
     function getFilteredReceiving() {
@@ -2201,7 +2258,7 @@
     function renderPagination(key, total, maxPage) {
       const container = document.getElementById(key + 'Pagination');
       if (total === 0 || maxPage <= 1) { container.innerHTML = ''; return }
-      const page = key === 'rec' ? recPage : key === 'issue' ? issuePage : rejPage;
+      const page = key === 'rec' ? recPage : key === 'issue' ? issuePage : key === 'iqc' ? iqcPage : rejPage;
       const start = (page - 1) * PAGE_SIZE + 1, end = Math.min(page * PAGE_SIZE, total);
       let html = `<span class="pg-info">${start}-${end} / ${total}</span>`;
       html += `<button class="pg-btn" onclick="changePage('${key}',${page - 1})" ${page <= 1 ? 'disabled' : ''}>Pre</button>`;
@@ -2218,11 +2275,116 @@
     function changePage(key, page) {
       if (key === 'rec') { recPage = page; renderReceivingTable() }
       else if (key === 'issue') { issuePage = page; renderIssueTable() }
+      else if (key === 'iqc') { iqcPage = page; renderIQCTable() }
       else { rejPage = page; renderRejectedTable() }
     }
     function clearRecSearch() { ['recSearch', 'recDateFrom', 'recDateTo'].forEach(id => document.getElementById(id).value = ''); document.getElementById('recStatusFilter').value = ''; recPage = 1; renderReceivingTable() }
     function clearIssueSearch() { ['issueSearch', 'issueDateFrom', 'issueDateTo'].forEach(id => document.getElementById(id).value = ''); document.getElementById('issueTypeFilter').value = ''; issuePage = 1; renderIssueTable() }
     function clearRejSearch() { ['rejSearch', 'rejDateFrom', 'rejDateTo'].forEach(id => document.getElementById(id).value = ''); document.getElementById('rejReturnedFilter').value = ''; rejPage = 1; renderRejectedTable() }
+
+    function clearIQCSearch() { ['iqcSearch', 'iqcDateFrom', 'iqcDateTo'].forEach(id => document.getElementById(id).value = ''); iqcPage = 1; renderIQCTable() }
+
+    function getFilteredIQC() {
+      const q = (document.getElementById('iqcSearch').value || '').toLowerCase();
+      const df = document.getElementById('iqcDateFrom').value;
+      const dt = document.getElementById('iqcDateTo').value;
+      const dtFrom = df && isValidDate(df) ? parseDMY(df) : null;
+      const dtTo = dt && isValidDate(dt) ? parseDMY(dt) : null;
+      return receiving.filter(r => {
+        if (!isTesting(r)) return false;
+        if (q && !([r.batchNo, r.sapCode, r.description, r.docNumber, r.location, r.remark || '', String(r.qty)].join(' ').toLowerCase().includes(q))) return false;
+        const rd = parseDMY(dateToDMY(r.recDate));
+        if (dtFrom && rd && rd < dtFrom) return false;
+        if (dtTo && rd && rd > dtTo) return false;
+        return true;
+      });
+    }
+
+    function renderIQCTable() {
+      const body = document.getElementById('iqcBody'); body.innerHTML = '';
+      const filtered = getFilteredIQC();
+      const total = filtered.length;
+      const allIQC = receiving.filter(r => isTesting(r)).length;
+      const maxPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      if (iqcPage > maxPage) iqcPage = maxPage;
+      document.getElementById('iqcCount').textContent = allIQC ? `(${total} shown / ${allIQC} total under testing)` : '';
+      if (!allIQC) { document.getElementById('alertIQC').classList.add('show'); document.getElementById('iqcTableWrap').style.display = 'none'; document.getElementById('iqcPagination').innerHTML = ''; return }
+      document.getElementById('alertIQC').classList.remove('show'); document.getElementById('iqcTableWrap').style.display = '';
+      if (total === 0) { body.innerHTML = '<tr><td colspan="10" class="empty-state">No matching testing records found.</td></tr>'; renderPagination('iqc', 0, 0); return }
+      const start = (iqcPage - 1) * PAGE_SIZE, end = Math.min(start + PAGE_SIZE, total);
+      filtered.slice(start, end).forEach((r, i) => {
+        const globalIdx = receiving.indexOf(r);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="mono">${total - start - i}</td>
+      <td class="mono">${dateToDMY(r.recDate) || '—'}</td>
+      <td>${escapeHtml(r.docNumber) || '—'}</td>
+      <td class="mono" style="color:var(--accent2)">
+  <span class="batch-tip" onclick="toggleTip(this,event)">${escapeHtml(r.batchNo)}
+    <span class="tip-box">${escapeHtml(r.remark) || 'No remark'}</span>
+  </span>
+</td>
+      <td class="mono" style="color:var(--yellow)">${escapeHtml(r.sapCode)}</td>
+      <td style="max-width:160px">${escapeHtml(r.description)}</td>
+      <td class="mono">${fmtKg(r.qty)}</td>
+      <td class="mono">${fmtNum(r.roll)}</td>
+      <td>${escapeHtml(r.location) || '—'}</td>
+      <td>
+        <div class="action-btns">
+          <button class="btn btn-sm" style="background:#f0fdf4;border:1px solid #86efac;color:#166534" onclick="openIQCStatusModal(${globalIdx},'Approved')">✅ Approve</button>
+          <button class="btn btn-sm" style="background:#fef2f2;border:1px solid #fca5a5;color:#991b1b" onclick="openIQCStatusModal(${globalIdx},'Rejected')">❌ Reject</button>
+        </div>
+      </td>`;
+        body.appendChild(tr);
+      });
+      renderPagination('iqc', total, maxPage);
+    }
+
+    function openIQCStatusModal(idx, newStatus) {
+      pendingIQCIdx = idx; pendingIQCStatus = newStatus;
+      const r = receiving[idx];
+      const isApprove = newStatus === 'Approved';
+      document.getElementById('iqcStatusFormContent').innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;font-size:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><span style="color:var(--text3)">Batch:</span> <strong class="mono">${escapeHtml(r.batchNo)}</strong></div>
+        <div><span style="color:var(--text3)">SAP:</span> <strong style="color:var(--yellow)">${escapeHtml(r.sapCode)}</strong></div>
+        <div style="grid-column:span 2"><span style="color:var(--text3)">Description:</span> <strong>${escapeHtml(r.description)}</strong></div>
+        <div><span style="color:var(--text3)">Qty:</span> <strong class="mono">${fmtKg(r.qty)} Kg</strong></div>
+        <div><span style="color:var(--text3)">Roll:</span> <strong class="mono">${fmtNum(r.roll)} Nos</strong></div>
+        <div><span style="color:var(--text3)">Location:</span> <strong>${escapeHtml(r.location) || '—'}</strong></div>
+        <div><span style="color:var(--text3)">Remark:</span> <strong>${escapeHtml(r.remark) || '—'}</strong></div>
+      </div>
+    </div>
+    <div style="background:${isApprove ? '#f0fdf4' : '#fef2f2'};border:1px solid ${isApprove ? '#86efac' : '#fca5a5'};border-radius:7px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:${isApprove ? '#166534' : '#991b1b'}">
+      ${isApprove ? '✅' : '❌'} Is batch ka status <strong>${escapeHtml(newStatus)}</strong> kar diya jayega. Confirm karo.
+    </div>`;
+      const btn = document.getElementById('confirmIQCStatusBtn');
+      btn.className = 'btn ' + (isApprove ? 'btn-primary' : 'btn-danger');
+      btn.textContent = isApprove ? '✅ Yes, Approve' : '❌ Yes, Reject';
+      document.getElementById('iqcStatusModal').classList.add('show');
+    }
+
+    async function confirmIQCStatusChange() {
+      if (pendingIQCIdx === null) return;
+      if (isSaving) { showToast('⏳ Wait karo', 'warn'); return }
+      const r = receiving[pendingIQCIdx];
+      const newStatus = pendingIQCStatus;
+      const newR = [...receiving];
+      newR[pendingIQCIdx] = { ...newR[pendingIQCIdx], status: newStatus, editedAt: new Date().toISOString() };
+      const recalced = recalcRemaining(newR, issues);
+      const btn = document.getElementById('confirmIQCStatusBtn');
+      isSaving = true; btn.disabled = true; btn.textContent = '⏳ Saving...';
+      const ok = await persist(recalced, issues, `Batch ${r.batchNo} ko ${newStatus} kiya ja raha hai...`);
+      isSaving = false; btn.disabled = false;
+      if (ok) {
+        receiving = recalced;
+        renderReceivingTable(); renderRejectedTable(); renderIQCTable(); populateSapDropdown();
+        closeModal('iqcStatusModal');
+        showToast(`✅ Batch ${r.batchNo} ab ${newStatus} hai`);
+      } else {
+        btn.textContent = newStatus === 'Approved' ? '✅ Yes, Approve' : '❌ Yes, Reject';
+      }
+    }
 
     function badgeHtml(s) {
       const c = { Pending: 'badge-pending', Testing: 'badge-testing', Approved: 'badge-approved', Rejected: 'badge-rejected', Returned: 'badge-returned' };
@@ -2253,6 +2415,7 @@
       document.getElementById(id).classList.remove('show');
       if (id !== 'statusWarnModal') { editIndex = null; }
       editIssueIndex = null; pendingPartyIdx = null; pendingCancelIssueIdx = null;
+      pendingIQCIdx = null; pendingIQCStatus = null;
     }
     async function saveEdit() {
       if (isSaving) { showToast('⏳ Wait karo', 'warn'); return }
@@ -2314,7 +2477,7 @@
       isSaving = true; btn.disabled = true; btn.textContent = '⏳ Saving...';
       const ok = await persist(recalced, issues, 'Changes save ho rahi hain...');
       isSaving = false; btn.disabled = false; btn.textContent = '💾 Save';
-      if (ok) { receiving = recalced; renderReceivingTable(); renderRejectedTable(); populateSapDropdown(); closeModal('editModal'); showToast('✅ Entry update ho gayi') }
+      if (ok) { receiving = recalced; renderReceivingTable(); renderRejectedTable(); renderIQCTable(); populateSapDropdown(); closeModal('editModal'); showToast('✅ Entry update ho gayi') }
     }
 
     function openIssueEdit(idx) {
@@ -2372,7 +2535,7 @@
       isSaving = false; btn.disabled = false; btn.textContent = '💾 Save';
       if (ok) {
         issues = newI; receiving = recalced;
-        renderReceivingTable(); renderIssueTable(); renderRejectedTable();
+        renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable();
         const sap = document.getElementById('issueSapCode').value;
         if (sap) refreshStockInfo(sap);
         closeModal('editIssueModal');
@@ -2454,7 +2617,7 @@
       isSaving = false; btn.disabled = false; btn.textContent = '✅ Yes, Cancel This Issue';
       if (ok) {
         issues = newI; receiving = recalced;
-        renderReceivingTable(); renderIssueTable(); renderRejectedTable();
+        renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable();
         const sap = document.getElementById('issueSapCode').value;
         if (sap) refreshStockInfo(sap);
         closeModal('cancelIssueModal');
@@ -2566,7 +2729,7 @@
       isSaving = false; btn.disabled = false; btn.textContent = '✅ Confirm Return to Party';
       if (ok) {
         receiving = recalced;
-        renderReceivingTable(); renderRejectedTable();
+        renderReceivingTable(); renderRejectedTable(); renderIQCTable();
         closeModal('partyModal');
         showToast(`✅ Batch ${r.batchNo} return ho gayi — Return Stock: ${r.returnStock}, Return Roll: ${r.returnRoll}`);
       }
@@ -2702,7 +2865,7 @@
       isSaving = true; btn.disabled = true; btn.textContent = '⏳ Saving...';
       const ok = await persist(recalced, newIssues, 'Issue sheet mein save ho raha hai...');
       isSaving = false; btn.disabled = false; btn.textContent = '✅ Process Issue';
-      if (ok) { receiving = recalced; issues = newIssues; renderReceivingTable(); renderIssueTable(); renderRejectedTable(); const sap2 = document.getElementById('issueSapCode').value; if (sap2) refreshStockInfo(sap2); clearIssueForm(); showToast(msg) }
+      if (ok) { receiving = recalced; issues = newIssues; renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable(); const sap2 = document.getElementById('issueSapCode').value; if (sap2) refreshStockInfo(sap2); clearIssueForm(); showToast(msg) }
     }
     function clearIssueForm() {
       ['issueSapCode', 'issueTo', 'issueQty', 'issueRoll', 'issueRemarks'].forEach(id => document.getElementById(id).value = '');
@@ -2934,6 +3097,8 @@ border:0.3mm dashed #ccc;
     flatpickr('#issueDateTo', fpConfig);
     flatpickr('#rejDateFrom', fpConfig);
     flatpickr('#rejDateTo', fpConfig);
+    flatpickr('#iqcDateFrom', fpConfig);
+    flatpickr('#iqcDateTo', fpConfig);
     flatpickr('#repDateFrom', fpConfig);
     flatpickr('#repDateTo', fpConfig);
 
