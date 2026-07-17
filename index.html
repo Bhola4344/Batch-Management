@@ -1487,7 +1487,10 @@
     <div class="tab-panel" id="tab-receiving">
       <div class="main">
         <div class="card">
-          <div class="card-title">📥 New Receiving Entry</div>
+         <div class="card-title">📥 New Receiving Entry
+            <button class="btn btn-secondary btn-sm" id="recFormToggleBtn" onclick="toggleTable('recForm')" style="margin-left:auto">🙈 Hide</button>
+          </div>
+          <div id="recFormContent">
           <div class="form-grid">
             <div class="form-group"><label>Batch</label><input type="text" id="batchNo" readonly class="mono"></div>
             <div class="form-group"><label>Rec. Date (dd-mm-yyyy)</label><input type="text" id="recDate"
@@ -1524,6 +1527,7 @@
           <div class="btn-row">
             <button class="btn btn-primary" id="addEntryBtn" onclick="addEntry()">➕ Add Entry</button>
             <button class="btn btn-secondary" onclick="clearForm()">🔄 Clear</button>
+          </div>
           </div>
         </div>
 
@@ -1628,7 +1632,10 @@
     <div class="tab-panel active" id="tab-issue">
       <div class="main">
         <div class="card">
-          <div class="card-title">📤 Issue / Dispatch Form</div>
+          <div class="card-title">📤 Issue / Dispatch Form
+            <button class="btn btn-secondary btn-sm" id="issueFormToggleBtn" onclick="toggleTable('issueForm')" style="margin-left:auto">🙈 Hide</button>
+          </div>
+          <div id="issueFormContent">
           <div class="form-grid" style="margin-bottom:16px">
             <div class="form-group">
               <label>SAP Code</label>
@@ -1698,6 +1705,7 @@
           <div class="btn-row">
             <button class="btn btn-primary" id="processIssueBtn" onclick="processIssue()">✅ Process Issue</button>
             <button class="btn btn-secondary" onclick="clearIssueForm()">🔄 Clear</button>
+          </div>
           </div>
         </div>
 
@@ -1986,7 +1994,7 @@
     }
     function applyTableVisibility() {
       const state = loadTableVisibility();
-      ['rec', 'issue', 'rej'].forEach(key => {
+      ['rec', 'issue', 'rej', 'recForm', 'issueForm'].forEach(key => {
         const visible = state[key] !== false;
         const content = document.getElementById(key + 'Content');
         const btn = document.getElementById(key + 'ToggleBtn');
@@ -2549,7 +2557,7 @@
       const currentPassword = document.getElementById('currentPassword').value;
       const newPassword = document.getElementById('newPassword').value;
       const confirmNewPassword = document.getElementById('confirmNewPassword').value;
-      const alertEl = document.getElementById('settingsAlert');
+      
 
       function showSettingsAlert(msg, type) {
         showToast(msg, type === 'error' ? 'error' : 'success');
@@ -2582,7 +2590,7 @@
 
     function clearSettingsForm(clearAlert = true) {
       ['newUsername', 'currentPassword', 'newPassword', 'confirmNewPassword'].forEach(id => document.getElementById(id).value = '');
-      if (clearAlert) document.getElementById('settingsAlert').classList.remove('show');
+      if (clearAlert) document.getElementById('settingsAlert')?.classList.remove('show');
     }
 
     function openCancelIssue(idx) {
