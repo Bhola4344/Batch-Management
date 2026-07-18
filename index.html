@@ -620,11 +620,12 @@
       color: #9a3412;
       border: 1px solid #fed7aa
     }
-.badge-hold {
-  background: #ffedd5;
-  color: #9a3412;
-  border: 1px solid #fdba74
-}
+
+    .badge-hold {
+      background: #ffedd5;
+      color: #9a3412;
+      border: 1px solid #fdba74
+    }
 
     .stock-card {
       background: var(--surface2);
@@ -1411,6 +1412,11 @@
         <div class="modal-title">✉️ Send Mail <span class="modal-close" onclick="closeModal('batchMailModal')">✕</span>
         </div>
         <div class="form-group" style="margin-bottom:14px">
+          <label>To (comma se alag multiple email)</label>
+          <input type="text" id="batchMailTo" placeholder="example1@mail.com, example2@mail.com"
+            oninput="saveBatchMailTo(this.value)">
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
           <label>Select Date (dd-mm-yyyy)</label>
           <input type="text" id="batchMailDate" placeholder="dd-mm-yyyy" maxlength="10"
             oninput="autoDateSlash(this);renderBatchMailPreview()">
@@ -1556,7 +1562,7 @@
                   <option value="Pending">PENDING</option>
                   <option value="Testing">TESTING</option>
                   <option value="Approved">APPROVED</option>
-		  <option value="Hold">HOLD</option>
+                  <option value="Hold">HOLD</option>
                   <option value="Rejected">REJECTED</option>
                 </select>
               </div>
@@ -1574,10 +1580,11 @@
 
         <div class="card">
           <div class="card-title">📋 Receiving Log
-  <button class="btn btn-orange btn-sm" onclick="openBatchMailModal()" style="margin-left:auto">📧 Send Mail</button>
-  <button class="btn btn-secondary btn-sm" id="recToggleBtn" onclick="toggleTable('rec')"
-    style="margin-left:8px">🙈 Hide</button>
-</div>
+            <button class="btn btn-orange btn-sm" onclick="openBatchMailModal()" style="margin-left:auto">📧 Send
+              Mail</button>
+            <button class="btn btn-secondary btn-sm" id="recToggleBtn" onclick="toggleTable('rec')"
+              style="margin-left:8px">🙈 Hide</button>
+          </div>
           <div id="recContent">
             <div class="search-bar">
               <div class="form-group"><label>Search</label><input type="text" id="recSearch"
@@ -1592,7 +1599,7 @@
                   <option value="Pending">Pending</option>
                   <option value="Testing">Testing</option>
                   <option value="Approved">Approved</option>
-		  <option value="Hold">Hold</option>
+                  <option value="Hold">Hold</option>
                   <option value="Rejected">Rejected</option>
                   <option value="Returned">Returned</option>
                 </select>
@@ -1754,9 +1761,9 @@
 
         <div class="card">
           <div class="card-title">📋 Issue Log
-  <button class="btn btn-secondary btn-sm" id="issueToggleBtn" onclick="toggleTable('issue')"
-    style="margin-left:auto">🙈 Hide</button>
-</div>
+            <button class="btn btn-secondary btn-sm" id="issueToggleBtn" onclick="toggleTable('issue')"
+              style="margin-left:auto">🙈 Hide</button>
+          </div>
           <div id="issueContent">
             <div class="search-bar">
               <div class="form-group"><label>Search</label><input type="text" id="issueSearch"
@@ -1893,7 +1900,7 @@
                 <option value="Pending">Pending</option>
                 <option value="Testing">Testing</option>
                 <option value="Approved">Approved</option>
-		<option value="Hold">Hold</option>
+                <option value="Hold">Hold</option>
                 <option value="Rejected">Rejected</option>
                 <option value="Returned">Returned</option>
               </select>
@@ -1974,7 +1981,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
 
   <script>
-    const CONFIG = { WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbxl3o2Ht_qyxDJV0txMZgi8rENydMmqGHd6_fGLYY_yKDIdo8iToU4UL1Xi-WEUOUNVtg/exec', API_TOKEN: 'a8f3k9x2m4p7q1w5e6r8t3y9u2i4o7' };
+    const CONFIG = { WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbw-lLKVVs6Eopiur7dHY7Mx5TCROM2EiqpaJJIJypPu541KNfmjm1xfqAyHjfMWXEZYiA/exec', API_TOKEN: 'a8f3k9x2m4p7q1w5e6r8t3y9u2i4o7' };
     let receiving = [], issues = [], editIndex = null, editIssueIndex = null, isSaving = false, pendingPartyIdx = null, pendingCancelIssueIdx = null, pendingIQCIdx = null, pendingIQCStatus = null;
     let batchMailExcluded = new Set();
     let sessionToken = null, idleTimer = null;
@@ -1999,7 +2006,7 @@
     }
     function dateToDMY(s) { if (!s) return ''; if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { const [y, m, d] = s.split('-'); return `${d}-${m}-${y}` } return s }
     function parseDMY(s) { if (!s || s.length !== 10) return null; const [d, m, y] = s.split('-'); const dt = new Date(+y, +m - 1, +d); return isNaN(dt) ? null : dt }
-    function normalizeStatus(s) { if (!s) return 'Pending'; const m = { 'pending': 'Pending', 'testing': 'Testing', 'approved': 'Approved', 'rejected': 'Rejected', 'returned': 'Returned' }; return m[String(s).toLowerCase().trim()] || String(s).trim() }
+    function normalizeStatus(s) { if (!s) return 'Pending'; const m = { 'pending': 'Pending', 'testing': 'Testing', 'approved': 'Approved', 'hold': 'Hold', 'rejected': 'Rejected', 'returned': 'Returned' }; return m[String(s).toLowerCase().trim()] || String(s).trim() }
     function normalizeReceiving(r) { return { ...r, recDate: dateToDMY(r.recDate), status: normalizeStatus(r.status), qty: Number(r.qty) || 0, roll: Number(r.roll) || 0, remainQty: Number(r.remainQty) || 0, remainRoll: Number(r.remainRoll) || 0, origQty: Number(r.origQty || r.qty) || 0, origRoll: Number(r.origRoll || r.roll) || 0, returnStock: Number(r.returnStock) || 0, returnRoll: Number(r.returnRoll) || 0, returnedToParty: r.returnedToParty === true || String(r.returnedToParty).toLowerCase() === 'true' } }
     function normalizeIssue(i) { return { ...i, qty: Number(i.qty) || 0, roll: Number(i.roll) || 0 } }
     function isApproved(r) { return String(r.status).toLowerCase().trim() === 'approved' }
@@ -2228,7 +2235,6 @@
 
     async function addEntry() {
       if (isSaving) { showToast('⏳ Save chal raha hai, wait karo', 'warn'); return }
-      const batchNo = document.getElementById('batchNo').value;
       const recDate = document.getElementById('recDate').value.trim();
       const docNumber = sanitize(document.getElementById('docNumber').value.trim());
       const sapCode = sanitize(document.getElementById('sapCode').value.trim());
@@ -2241,13 +2247,29 @@
       const remark = sanitize(document.getElementById('remark').value.trim());
       if (!isValidDate(recDate)) { showToast('❌ Date sahi format mein daalo: dd-mm-yyyy', 'error'); return }
       if (!sapCode || !description) { showToast('❌ SAP Code aur Description zaroori hain', 'error'); return }
-      const entry = { batchNo, recDate, docNumber, sapCode, description, qty, roll, status, location, remark, origQty: qty, origRoll: roll, remainQty: qty, remainRoll: roll, returnedToParty: false, returnDate: '', partyName: '', returnRemark: '', ts: new Date().toISOString() };
-      const newR = [entry, ...receiving];
+
       const btn = document.getElementById('addEntryBtn');
       isSaving = true; btn.disabled = true; btn.textContent = '⏳ Saving...';
-      const ok = await persist(newR, issues, 'Entry sheet mein save ho rahi hai...');
-      isSaving = false; btn.disabled = false; btn.textContent = '➕ Add Entry';
-      if (ok) { receiving = newR; renderReceivingTable(); renderRejectedTable(); renderIQCTable(); populateSapDropdown(); clearForm(); showToast('✅ Entry add hui — Batch ' + batchNo) }
+      showToast('⏳ Entry sheet mein save ho rahi hai...');
+      try {
+        // NOTE: batchNo yahan nahi bheja — backend LockService ke saath khud generate karega
+        const resp = await apiCall('addEntry', { recDate, docNumber, sapCode, description, qty, roll, status, location, remark });
+        if (resp.status === 'ok') {
+          receiving = [normalizeReceiving(resp.entry), ...receiving];
+          renderReceivingTable(); renderRejectedTable(); renderIQCTable(); populateSapDropdown();
+          clearForm();
+          showToast('✅ Entry add hui — Batch ' + resp.batchNo);
+          updateGsStatus(true);
+        } else {
+          updateGsStatus(false, true);
+          showToast('❌ ' + (resp.msg || 'Save failed'), 'error');
+        }
+      } catch (e) {
+        updateGsStatus(false, true);
+        showToast('❌ Network error: ' + e.message, 'error');
+      } finally {
+        isSaving = false; btn.disabled = false; btn.textContent = '➕ Add Entry';
+      }
     }
 
     function getFilteredReceiving() {
@@ -2517,6 +2539,9 @@
       r.qty = Math.max(0, Math.min(round2(document.getElementById('e_qty').value), 99999));
       r.roll = Math.max(0, Math.min(parseInt(document.getElementById('e_roll').value) || 0, 99999));
       r.status = document.getElementById('e_status').value;
+      if (orig.status === 'Returned' && r.status !== 'Returned') {
+        r.returnedToParty = false;
+      }
       r.location = sanitize(document.getElementById('e_location').value.trim());
       r.remark = sanitize(document.getElementById('e_remark').value.trim());
       r.editedAt = new Date().toISOString();
@@ -2894,6 +2919,8 @@
         if (!batch) { showToast('❌ Batch nahi mili', 'error'); return }
         if (iq > batch.remainQty) { showToast(`❌ Qty zyada hai! Batch remaining: ${batch.remainQty} Kg`, 'error'); return }
         if (ir > batch.remainRoll) { showToast(`❌ Roll zyada hai! Batch remaining rolls: ${batch.remainRoll}`, 'error'); return }
+        if (iq === batch.remainQty && ir !== batch.remainRoll) { showToast(`❌ Poori Qty (${batch.remainQty} Kg) le rahe ho — is batch ka Roll bhi pura (${batch.remainRoll}) daalna padega`, 'error'); return }
+        if (ir === batch.remainRoll && iq !== batch.remainQty) { showToast(`❌ Poore Roll (${batch.remainRoll}) le rahe ho — is batch ki Qty bhi puri (${batch.remainQty} Kg) daalni padegi`, 'error'); return }
         newIssues = [{ issueDate, sap, batchNo: sb, description: batch.description || '', location: batch.location || '', issueTo, qty: iq, roll: ir, type: 'Special Approval', remarks, ts: new Date().toISOString() }, ...issues];
         msg = '⭐ Special issue done — Batch ' + sb;
       } else {
@@ -2909,6 +2936,14 @@
           leftQty = round2(leftQty - tq); leftRoll = Math.max(0, leftRoll - tr2);
           used.push(b.batchNo);
           added.push({ issueDate, sap, batchNo: b.batchNo, description: b.description || '', location: b.location || '', issueTo, qty: tq, roll: tr2, type: 'FIFO', remarks, ts: new Date().toISOString() });
+        }
+        for (const entry of added) {
+          const origBatch = batches.find(b => b.batchNo === entry.batchNo);
+          if (!origBatch) continue;
+          const tookFullQty = entry.qty === origBatch.remainQty;
+          const tookFullRoll = entry.roll === origBatch.remainRoll;
+          if (tookFullQty && !tookFullRoll) { showToast(`❌ Batch ${entry.batchNo} ki poori Qty (${origBatch.remainQty} Kg) ja rahi hai lekin Roll adhoora reh gaya — Roll number adjust karke poora (${origBatch.remainRoll}) is batch ke liye dedo`, 'error'); return }
+          if (tookFullRoll && !tookFullQty) { showToast(`❌ Batch ${entry.batchNo} ke poore Roll (${origBatch.remainRoll}) ja rahe hain lekin Qty adhoori reh gayi — Roll number adjust karo`, 'error'); return }
         }
         newIssues = [...added, ...issues]; msg = '✅ FIFO issue done — ' + used.join(', ');
       }
@@ -2988,6 +3023,15 @@
       generateSticker(receiving[idx]);
     }
 
+
+
+    function loadBatchMailTo() {
+      return localStorage.getItem('batchMailTo') || '';
+    }
+    function saveBatchMailTo(val) {
+      localStorage.setItem('batchMailTo', val);
+    }
+
     function getLatestRecDate() {
       if (!receiving.length) return todayStr();
       let latest = null;
@@ -3001,6 +3045,7 @@
 
     function openBatchMailModal() {
       batchMailExcluded = new Set();
+      document.getElementById('batchMailTo').value = loadBatchMailTo();
       document.getElementById('batchMailDate').value = getLatestRecDate();
       document.getElementById('batchMailModal').classList.add('show');
       renderBatchMailPreview();
@@ -3051,7 +3096,11 @@
       const rows = receiving.filter(r => dateToDMY(r.recDate) === dateVal && !batchMailExcluded.has(r.batchNo));
       if (!rows.length) { showToast('❌ Bhejne ke liye koi row nahi bachi', 'error'); return; }
 
-      const to = 'baraibhola6@gmail.com';
+      const toRaw = document.getElementById('batchMailTo').value.trim();
+      const toList = toRaw.split(',').map(x => x.trim()).filter(Boolean);
+      if (!toList.length) { showToast('❌ Kam se kam ek mail ID daalo', 'error'); return; }
+      saveBatchMailTo(toRaw);
+      const to = toList.join(',');
       const subject = `Roll Receiving Notification – ${dateVal} (${rows.length} Batches)`;
 
       const tableRows = rows.map(r => `
