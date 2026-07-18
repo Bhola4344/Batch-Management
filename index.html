@@ -1400,6 +1400,39 @@
       </div>
     </div>
 
+    <!-- Batch Mail Modal -->
+    <div class="modal-overlay" id="batchMailModal">
+      <div class="party-modal" style="max-width:640px">
+        <div class="modal-title">✉️ Send Mail <span class="modal-close" onclick="closeModal('batchMailModal')">✕</span>
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label>Select Date (dd-mm-yyyy)</label>
+          <input type="text" id="batchMailDate" placeholder="dd-mm-yyyy" maxlength="10"
+            oninput="autoDateSlash(this);renderBatchMailPreview()">
+        </div>
+        <div id="batchMailPreviewWrap" class="table-wrap" style="max-height:300px;overflow-y:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Batch</th>
+                <th>SAP</th>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Roll</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="batchMailBody"></tbody>
+          </table>
+        </div>
+        <div id="batchMailEmpty" class="alert alert-info" style="margin-top:10px"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="sendBatchMailBtn" onclick="confirmSendBatchMail()">✅ Send Mail</button>
+          <button class="btn btn-secondary" onclick="closeModal('batchMailModal')">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Edit Issue Modal -->
     <div class="modal-overlay" id="editIssueModal">
       <div class="modal">
@@ -1487,53 +1520,56 @@
     <div class="tab-panel" id="tab-receiving">
       <div class="main">
         <div class="card">
-         <div class="card-title">📥 New Receiving Entry
-            <button class="btn btn-secondary btn-sm" id="recFormToggleBtn" onclick="toggleTable('recForm')" style="margin-left:auto">🙈 Hide</button>
+          <div class="card-title">📥 New Receiving Entry
+            <button class="btn btn-secondary btn-sm" id="recFormToggleBtn" onclick="toggleTable('recForm')"
+              style="margin-left:auto">🙈 Hide</button>
           </div>
           <div id="recFormContent">
-          <div class="form-grid">
-            <div class="form-group"><label>Batch</label><input type="text" id="batchNo" readonly class="mono"></div>
-            <div class="form-group"><label>Rec. Date (dd-mm-yyyy)</label><input type="text" id="recDate"
-                placeholder="dd-mm-yyyy" maxlength="10" oninput="autoDateSlash(this)"></div>
-            <div class="form-group"><label>Doc Number</label><input type="text" id="docNumber" placeholder="5000307074">
+            <div class="form-grid">
+              <div class="form-group"><label>Batch</label><input type="text" id="batchNo" readonly class="mono"></div>
+              <div class="form-group"><label>Rec. Date (dd-mm-yyyy)</label><input type="text" id="recDate"
+                  placeholder="dd-mm-yyyy" maxlength="10" oninput="autoDateSlash(this)"></div>
+              <div class="form-group"><label>Doc Number</label><input type="text" id="docNumber"
+                  placeholder="5000307074">
+              </div>
+              <div class="form-group"><label>SAP Code</label><input type="text" id="sapCode" placeholder="2000000096"
+                  oninput="onSapCodeInput(this)">
+                <span class="desc-hint" id="sapHint">✅ Auto-filled from existing record</span>
+              </div>
+              <div class="form-group wide">
+                <label>Description</label>
+                <input type="text" id="description" placeholder="SPF-6FT-SUEDE FINISH-PRINTED-FOR PLPB"
+                  oninput="this.value=sanitize(this.value)">
+                <span class="desc-hint" id="descHint">✅ Auto-filled from existing record</span>
+              </div>
+              <div class="form-group"><label>Rec. Qty (Kg)</label><input type="number" id="qty" placeholder="0" min="0"
+                  max="99999" step="0.01" oninput="if(this.value<0)this.value=0"></div>
+              <div class="form-group"><label>Rec. Roll (Nos)</label><input type="number" id="roll" placeholder="0"
+                  min="0" max="99999" oninput="if(this.value<0)this.value=0"></div>
+              <div class="form-group"><label>Status</label>
+                <select id="status">
+                  <option value="Pending">PENDING</option>
+                  <option value="Testing">TESTING</option>
+                  <option value="Approved">APPROVED</option>
+                  <option value="Rejected">REJECTED</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Location</label><input type="text" id="location" placeholder="01"
+                  oninput="this.value=sanitize(this.value)"></div>
+              <div class="form-group wide"><label>Remark</label><input type="text" id="remark"
+                  placeholder="OPTIONAL REMARK..." oninput="this.value=sanitize(this.value).toUpperCase()"></div>
             </div>
-            <div class="form-group"><label>SAP Code</label><input type="text" id="sapCode" placeholder="2000000096"
-                oninput="onSapCodeInput(this)">
-              <span class="desc-hint" id="sapHint">✅ Auto-filled from existing record</span>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="addEntryBtn" onclick="addEntry()">➕ Add Entry</button>
+              <button class="btn btn-secondary" onclick="clearForm()">🔄 Clear</button>
             </div>
-            <div class="form-group wide">
-              <label>Description</label>
-              <input type="text" id="description" placeholder="SPF-6FT-SUEDE FINISH-PRINTED-FOR PLPB"
-                oninput="this.value=sanitize(this.value)">
-              <span class="desc-hint" id="descHint">✅ Auto-filled from existing record</span>
-            </div>
-            <div class="form-group"><label>Rec. Qty (Kg)</label><input type="number" id="qty" placeholder="0" min="0"
-                max="99999" step="0.01" oninput="if(this.value<0)this.value=0"></div>
-            <div class="form-group"><label>Rec. Roll (Nos)</label><input type="number" id="roll" placeholder="0" min="0"
-                max="99999" oninput="if(this.value<0)this.value=0"></div>
-            <div class="form-group"><label>Status</label>
-              <select id="status">
-                <option value="Pending">PENDING</option>
-                <option value="Testing">TESTING</option>
-                <option value="Approved">APPROVED</option>
-                <option value="Rejected">REJECTED</option>
-              </select>
-            </div>
-            <div class="form-group"><label>Location</label><input type="text" id="location" placeholder="01"
-                oninput="this.value=sanitize(this.value)"></div>
-            <div class="form-group wide"><label>Remark</label><input type="text" id="remark"
-                placeholder="OPTIONAL REMARK..." oninput="this.value=sanitize(this.value).toUpperCase()"></div>
-          </div>
-          <div class="btn-row">
-            <button class="btn btn-primary" id="addEntryBtn" onclick="addEntry()">➕ Add Entry</button>
-            <button class="btn btn-secondary" onclick="clearForm()">🔄 Clear</button>
-          </div>
           </div>
         </div>
 
         <div class="card">
           <div class="card-title">📋 Receiving Log <span id="entryCount"
               style="color:var(--accent);font-size:12px;margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600"></span>
+            <button class="btn btn-orange btn-sm" onclick="openBatchMailModal()">📧 Send Mail</button>
             <button class="btn btn-secondary btn-sm" id="recToggleBtn" onclick="toggleTable('rec')"
               style="margin-left:8px">🙈 Hide</button>
           </div>
@@ -1633,79 +1669,80 @@
       <div class="main">
         <div class="card">
           <div class="card-title">📤 Issue / Dispatch Form
-            <button class="btn btn-secondary btn-sm" id="issueFormToggleBtn" onclick="toggleTable('issueForm')" style="margin-left:auto">🙈 Hide</button>
+            <button class="btn btn-secondary btn-sm" id="issueFormToggleBtn" onclick="toggleTable('issueForm')"
+              style="margin-left:auto">🙈 Hide</button>
           </div>
           <div id="issueFormContent">
-          <div class="form-grid" style="margin-bottom:16px">
-            <div class="form-group">
-              <label>SAP Code</label>
-              <select id="issueSapCode" onchange="onSapSelect()">
-                <option value="">-- Select --</option>
-              </select>
+            <div class="form-grid" style="margin-bottom:16px">
+              <div class="form-group">
+                <label>SAP Code</label>
+                <select id="issueSapCode" onchange="onSapSelect()">
+                  <option value="">-- Select --</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Issue Date (dd-mm-yyyy)</label><input type="text" id="issueDate"
+                  placeholder="dd-mm-yyyy" maxlength="10" oninput="autoDateSlash(this)"></div>
+              <div class="form-group">
+                <label>Issued To</label>
+                <select id="issueTo">
+                  <option value="">-- Select Dept --</option>
+                  <option>Packing-C34A</option>
+                  <option>Packing-C34</option>
+                  <option>Packing-C3</option>
+                  <option>Quality-C34A</option>
+                  <option>Quality-C34</option>
+                  <option>Quality-C3</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Issue Qty(Kg)</label><input type="number" id="issueQty" placeholder="0"
+                  min="1" max="99999" step="0.01" oninput="if(this.value<0)this.value=0;checkIssue()"></div>
+              <div class="form-group"><label>Issue Roll(Nos)</label><input type="number" id="issueRoll" placeholder="0"
+                  min="0" max="99999" oninput="if(this.value<0)this.value=0;checkIssue()"></div>
+              <div class="form-group"><label>Remarks</label><input type="text" id="issueRemarks" placeholder="Optional"
+                  oninput="this.value=sanitize(this.value)"></div>
             </div>
-            <div class="form-group"><label>Issue Date (dd-mm-yyyy)</label><input type="text" id="issueDate"
-                placeholder="dd-mm-yyyy" maxlength="10" oninput="autoDateSlash(this)"></div>
-            <div class="form-group">
-              <label>Issued To</label>
-              <select id="issueTo">
-                <option value="">-- Select Dept --</option>
-                <option>Packing-C34A</option>
-                <option>Packing-C34</option>
-                <option>Packing-C3</option>
-                <option>Quality-C34A</option>
-                <option>Quality-C34</option>
-                <option>Quality-C3</option>
-              </select>
-            </div>
-            <div class="form-group"><label>Issue Qty(Kg)</label><input type="number" id="issueQty" placeholder="0"
-                min="1" max="99999" step="0.01" oninput="if(this.value<0)this.value=0;checkIssue()"></div>
-            <div class="form-group"><label>Issue Roll(Nos)</label><input type="number" id="issueRoll" placeholder="0"
-                min="0" max="99999" oninput="if(this.value<0)this.value=0;checkIssue()"></div>
-            <div class="form-group"><label>Remarks</label><input type="text" id="issueRemarks" placeholder="Optional"
-                oninput="this.value=sanitize(this.value)"></div>
-          </div>
-          <label class="special-toggle">
-            <input type="checkbox" id="specialApproval" onchange="onSpecialToggle()">
-            <span class="special-toggle-label">⭐ Special Approval — Override FIFO</span>
-          </label>
-          <div id="specialBatchDiv" style="display:none;margin-bottom:14px">
-            <div class="form-group">
-              <label>Select Batch</label>
-              <select id="specialBatch" style="border-color:var(--purple)" onchange="checkIssue()">
-                <option value="">-- Select Batch --</option>
-              </select>
-              <div id="specialBatchInfo" style="display:none;margin-top:6px;font-size:11px;color:var(--text2)">
-                Selected: <span class="batch-tip" onclick="toggleTip(this,event)"
-                  style="color:var(--purple);font-weight:600">
-                  <span id="specialBatchTipLabel"></span>
-                  <span class="tip-box" id="specialBatchTipText"></span>
-                </span>
-              </div>
-            </div>
-          </div>
-          <div id="stockInfo" style="display:none">
-            <div class="stock-card">
-              <div class="stock-item"><label>SAP Code</label>
-                <div class="val accent" id="siSap">—</div>
-              </div>
-              <div class="stock-item"><label>Total Qty (Approved)</label>
-                <div class="val green" id="siQty">—</div>
-              </div>
-              <div class="stock-item"><label>Total Rolls</label>
-                <div class="val green" id="siRoll">—</div>
-              </div>
-              <div class="stock-item"><label>Active Batch (FIFO)</label>
-                <div class="val yellow" id="siActiveBatch">—</div>
+            <label class="special-toggle">
+              <input type="checkbox" id="specialApproval" onchange="onSpecialToggle()">
+              <span class="special-toggle-label">⭐ Special Approval — Override FIFO</span>
+            </label>
+            <div id="specialBatchDiv" style="display:none;margin-bottom:14px">
+              <div class="form-group">
+                <label>Select Batch</label>
+                <select id="specialBatch" style="border-color:var(--purple)" onchange="checkIssue()">
+                  <option value="">-- Select Batch --</option>
+                </select>
+                <div id="specialBatchInfo" style="display:none;margin-top:6px;font-size:11px;color:var(--text2)">
+                  Selected: <span class="batch-tip" onclick="toggleTip(this,event)"
+                    style="color:var(--purple);font-weight:600">
+                    <span id="specialBatchTipLabel"></span>
+                    <span class="tip-box" id="specialBatchTipText"></span>
+                  </span>
+                </div>
               </div>
             </div>
-            <div class="batch-queue-title">📦 Batch Queue (FIFO — Approved Only)</div>
-            <div id="batchQueueList"></div>
-          </div>
-          <div id="issueAlert" class="alert"></div>
-          <div class="btn-row">
-            <button class="btn btn-primary" id="processIssueBtn" onclick="processIssue()">✅ Process Issue</button>
-            <button class="btn btn-secondary" onclick="clearIssueForm()">🔄 Clear</button>
-          </div>
+            <div id="stockInfo" style="display:none">
+              <div class="stock-card">
+                <div class="stock-item"><label>SAP Code</label>
+                  <div class="val accent" id="siSap">—</div>
+                </div>
+                <div class="stock-item"><label>Total Qty (Approved)</label>
+                  <div class="val green" id="siQty">—</div>
+                </div>
+                <div class="stock-item"><label>Total Rolls</label>
+                  <div class="val green" id="siRoll">—</div>
+                </div>
+                <div class="stock-item"><label>Active Batch (FIFO)</label>
+                  <div class="val yellow" id="siActiveBatch">—</div>
+                </div>
+              </div>
+              <div class="batch-queue-title">📦 Batch Queue (FIFO — Approved Only)</div>
+              <div id="batchQueueList"></div>
+            </div>
+            <div id="issueAlert" class="alert"></div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="processIssueBtn" onclick="processIssue()">✅ Process Issue</button>
+              <button class="btn btn-secondary" onclick="clearIssueForm()">🔄 Clear</button>
+            </div>
           </div>
         </div>
 
@@ -1873,7 +1910,8 @@
           <div class="card-title">📋 Report Details <span id="reportCount"
               style="color:var(--accent);font-size:12px;margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600"></span>
           </div>
-          <div id="alertReport" class="alert alert-info show">ℹ️ Report generate karne ke liye upar options select karke
+          <div id="alertReport" class="alert alert-info show">ℹ️ Report generate karne ke liye upar options select
+            karke
             "Generate Report" click karo.</div>
           <div class="table-wrap" id="reportTableWrap" style="display:none">
             <table>
@@ -1930,8 +1968,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
 
   <script>
-    const CONFIG = { WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbxiO8lBnZLT3T-rlXG0RDwn9RDkmWX0SpvcWCgqjyqiVYpHCCnlfQ2HFbS8yd1xDU-xFg/exec', API_TOKEN: 'a8f3k9x2m4p7q1w5e6r8t3y9u2i4o7' };
+    const CONFIG = { WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbxH03ih3PwQXtjNkPgb0CdGhYss4ZJ1njlwsMy-BBZLLtv6IAG_77K8w2ZqzNzEGGnxxg/exec', API_TOKEN: 'a8f3k9x2m4p7q1w5e6r8t3y9u2i4o7' };
     let receiving = [], issues = [], editIndex = null, editIssueIndex = null, isSaving = false, pendingPartyIdx = null, pendingCancelIssueIdx = null, pendingIQCIdx = null, pendingIQCStatus = null;
+    let batchMailExcluded = new Set();
     let sessionToken = null, idleTimer = null;
     const PAGE_SIZE = 5;
     let recPage = 1, issuePage = 1, rejPage = 1, iqcPage = 1;
@@ -2557,7 +2596,7 @@
       const currentPassword = document.getElementById('currentPassword').value;
       const newPassword = document.getElementById('newPassword').value;
       const confirmNewPassword = document.getElementById('confirmNewPassword').value;
-      
+
 
       function showSettingsAlert(msg, type) {
         showToast(msg, type === 'error' ? 'error' : 'success');
@@ -2945,6 +2984,117 @@
       generateSticker(receiving[idx]);
     }
 
+    function getLatestRecDate() {
+      if (!receiving.length) return todayStr();
+      let latest = null;
+      receiving.forEach(r => {
+        const d = parseDMY(dateToDMY(r.recDate));
+        if (d && (!latest || d > latest)) latest = d;
+      });
+      if (!latest) return todayStr();
+      return String(latest.getDate()).padStart(2, '0') + '-' + String(latest.getMonth() + 1).padStart(2, '0') + '-' + latest.getFullYear();
+    }
+
+    function openBatchMailModal() {
+      batchMailExcluded = new Set();
+      document.getElementById('batchMailDate').value = getLatestRecDate();
+      document.getElementById('batchMailModal').classList.add('show');
+      renderBatchMailPreview();
+    }
+
+    function renderBatchMailPreview() {
+      const dateVal = document.getElementById('batchMailDate').value.trim();
+      const body = document.getElementById('batchMailBody');
+      const emptyEl = document.getElementById('batchMailEmpty');
+      const wrap = document.getElementById('batchMailPreviewWrap');
+      const btn = document.getElementById('sendBatchMailBtn');
+      body.innerHTML = '';
+
+      if (!isValidDate(dateVal)) {
+        emptyEl.textContent = '⚠️ Sahi date format daalo: dd-mm-yyyy';
+        emptyEl.classList.add('show'); wrap.style.display = 'none'; btn.disabled = true;
+        return;
+      }
+      const allRows = receiving.filter(r => dateToDMY(r.recDate) === dateVal);
+      const rows = allRows.filter(r => !batchMailExcluded.has(r.batchNo));
+      if (!allRows.length) {
+        emptyEl.textContent = 'ℹ️ Is date ka koi record nahi mila.';
+        emptyEl.classList.add('show'); wrap.style.display = 'none'; btn.disabled = true;
+        return;
+      }
+      if (!rows.length) {
+        emptyEl.textContent = '⚠️ Saari rows hata di gayi hain — kam se kam ek rakho.';
+        emptyEl.classList.add('show'); wrap.style.display = ''; btn.disabled = true;
+        return;
+      }
+      emptyEl.classList.remove('show'); wrap.style.display = ''; btn.disabled = false;
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="mono">${escapeHtml(r.batchNo)}</td><td class="mono">${escapeHtml(r.sapCode)}</td><td>${escapeHtml(r.description)}</td><td class="mono">${fmtKg(r.qty)}</td><td class="mono">${fmtNum(r.roll)}</td>
+      <td><span style="cursor:pointer;color:var(--red);font-weight:700" onclick="removeBatchMailRow('${escapeHtml(r.batchNo).replace(/'/g, "\\'")}')" title="Is row ko hatao">❌</span></td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    function removeBatchMailRow(batchNo) {
+      batchMailExcluded.add(batchNo);
+      renderBatchMailPreview();
+    }
+
+    async function confirmSendBatchMail() {
+      const dateVal = document.getElementById('batchMailDate').value.trim();
+      if (!isValidDate(dateVal)) { showToast('❌ Sahi date daalo', 'error'); return; }
+      const rows = receiving.filter(r => dateToDMY(r.recDate) === dateVal && !batchMailExcluded.has(r.batchNo));
+      if (!rows.length) { showToast('❌ Bhejne ke liye koi row nahi bachi', 'error'); return; }
+
+      const to = 'baraibhola6@gmail.com';
+      const subject = `Roll Receiving Notification – ${dateVal} (${rows.length} Batches)`;
+
+      const tableRows = rows.map(r => `
+    <tr>
+      <td style="border:1px solid #333;padding:6px 10px">${escapeHtml(r.batchNo)}</td>
+      <td style="border:1px solid #333;padding:6px 10px">${escapeHtml(r.sapCode)}</td>
+      <td style="border:1px solid #333;padding:6px 10px">${escapeHtml(r.description)}</td>
+      <td style="border:1px solid #333;padding:6px 10px">${fmtKg(r.qty)} Kg</td>
+      <td style="border:1px solid #333;padding:6px 10px">${fmtNum(r.roll)} Nos</td>
+      <td style="border:1px solid #333;padding:6px 10px">${escapeHtml(r.remark) || '—'}</td>
+    </tr>`).join('');
+
+      const bodyHtml = `
+  <div style="font-family:Arial,sans-serif;font-size:13px;color:#222">
+    <p>Dear Sir/Madam,</p>
+    <p>Please be informed that the Store Department has received the following rolls on <strong>${dateVal}</strong>.</p>
+    <table style="border-collapse:collapse;width:100%;margin:12px 0">
+      <tr>
+        <td style="border:1px solid #333;padding:6px 10px;background:#f2f2f2;font-weight:bold">Batch No</td>
+        <td style="border:1px solid #333;padding:6px 10px;background:#f2f2f2;font-weight:bold">SAP Code</td>
+        <td style="border:1px solid #333;padding:6px 10px;background:#f2f2f2;font-weight:bold">Description</td>
+        <td style="border:1px solid #333;padding:6px 10px;background:#f2f2f2;font-weight:bold">Received Qty</td>
+        <td style="border:1px solid #333;padding:6px 10px;background:#f2f2f2;font-weight:bold">Received Rolls</td>
+        <td style="border:1px solid #333;padding:6px 10px;background:#f2f2f2;font-weight:bold">Remark</td>
+      </tr>
+      ${tableRows}
+    </table>
+    <p>Regards,<br>Store Department</p>
+  </div>`;
+
+      const btn = document.getElementById('sendBatchMailBtn');
+      btn.disabled = true; btn.textContent = '⏳ Sending...';
+      try {
+        const resp = await apiCall('sendMail', { to, subject, bodyHtml });
+        if (resp.status === 'ok') {
+          showToast(`✅ Mail bhej diya — ${rows.length} batches (${dateVal})`);
+          closeModal('batchMailModal');
+        } else {
+          showToast('❌ Mail bhejne mein error: ' + (resp.msg || 'unknown'), 'error');
+        }
+      } catch (e) {
+        showToast('❌ Network error: ' + e.message, 'error');
+      } finally {
+        btn.disabled = false; btn.textContent = '✅ Send Mail';
+      }
+    }
+
     // ── STICKER for Rejected ──
     function openRejSticker(idx) {
       generateRejectedSticker(receiving[idx]);
@@ -3109,6 +3259,7 @@ border:0.3mm dashed #ccc;
     flatpickr('#iqcDateTo', fpConfig);
     flatpickr('#repDateFrom', fpConfig);
     flatpickr('#repDateTo', fpConfig);
+    flatpickr('#batchMailDate', fpConfig);
 
 
     // Block '-', '+', 'e' keys on all number inputs (qty/roll fields etc.)
