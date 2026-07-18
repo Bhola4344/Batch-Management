@@ -620,6 +620,11 @@
       color: #9a3412;
       border: 1px solid #fed7aa
     }
+.badge-hold {
+  background: #ffedd5;
+  color: #9a3412;
+  border: 1px solid #fdba74
+}
 
     .stock-card {
       background: var(--surface2);
@@ -1551,6 +1556,7 @@
                   <option value="Pending">PENDING</option>
                   <option value="Testing">TESTING</option>
                   <option value="Approved">APPROVED</option>
+		  <option value="Hold">HOLD</option>
                   <option value="Rejected">REJECTED</option>
                 </select>
               </div>
@@ -1567,7 +1573,7 @@
         </div>
 
         <div class="card">
-         <div class="card-title">📋 Receiving Log
+          <div class="card-title">📋 Receiving Log
   <button class="btn btn-orange btn-sm" onclick="openBatchMailModal()" style="margin-left:auto">📧 Send Mail</button>
   <button class="btn btn-secondary btn-sm" id="recToggleBtn" onclick="toggleTable('rec')"
     style="margin-left:8px">🙈 Hide</button>
@@ -1586,6 +1592,7 @@
                   <option value="Pending">Pending</option>
                   <option value="Testing">Testing</option>
                   <option value="Approved">Approved</option>
+		  <option value="Hold">Hold</option>
                   <option value="Rejected">Rejected</option>
                   <option value="Returned">Returned</option>
                 </select>
@@ -1746,7 +1753,7 @@
         </div>
 
         <div class="card">
-         <div class="card-title">📋 Issue Log
+          <div class="card-title">📋 Issue Log
   <button class="btn btn-secondary btn-sm" id="issueToggleBtn" onclick="toggleTable('issue')"
     style="margin-left:auto">🙈 Hide</button>
 </div>
@@ -1886,6 +1893,7 @@
                 <option value="Pending">Pending</option>
                 <option value="Testing">Testing</option>
                 <option value="Approved">Approved</option>
+		<option value="Hold">Hold</option>
                 <option value="Rejected">Rejected</option>
                 <option value="Returned">Returned</option>
               </select>
@@ -1966,7 +1974,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
 
   <script>
-    const CONFIG = { WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbxH03ih3PwQXtjNkPgb0CdGhYss4ZJ1njlwsMy-BBZLLtv6IAG_77K8w2ZqzNzEGGnxxg/exec', API_TOKEN: 'a8f3k9x2m4p7q1w5e6r8t3y9u2i4o7' };
+    const CONFIG = { WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbxl3o2Ht_qyxDJV0txMZgi8rENydMmqGHd6_fGLYY_yKDIdo8iToU4UL1Xi-WEUOUNVtg/exec', API_TOKEN: 'a8f3k9x2m4p7q1w5e6r8t3y9u2i4o7' };
     let receiving = [], issues = [], editIndex = null, editIssueIndex = null, isSaving = false, pendingPartyIdx = null, pendingCancelIssueIdx = null, pendingIQCIdx = null, pendingIQCStatus = null;
     let batchMailExcluded = new Set();
     let sessionToken = null, idleTimer = null;
@@ -2431,8 +2439,8 @@
     }
 
     function badgeHtml(s) {
-      const c = { Pending: 'badge-pending', Testing: 'badge-testing', Approved: 'badge-approved', Rejected: 'badge-rejected', Returned: 'badge-returned' };
-      const ic = { Pending: '⏳', Testing: '🔬', Approved: '✅', Rejected: '❌', Returned: '📦' };
+      const c = { Pending: 'badge-pending', Testing: 'badge-testing', Approved: 'badge-approved', Rejected: 'badge-rejected', Returned: 'badge-returned', Hold: 'badge-hold' };
+      const ic = { Pending: '⏳', Testing: '🔬', Approved: '✅', Hold: '⏸️', Rejected: '❌', Returned: '📦' };
       return `<span class="badge ${c[s] || 'badge-pending'}">${ic[s] || ''} ${s || 'Pending'}</span>`;
     }
 
@@ -2448,7 +2456,7 @@
     <div class="form-group wide"><label>Description</label><input id="e_description" value="${escapeHtml(r.description)}"></div>
     <div class="form-group"><label>Qty</label><input type="number" id="e_qty" value="${r.qty}" min="0" step="0.01" oninput="if(this.value<0)this.value=0"></div>
     <div class="form-group"><label>Roll</label><input type="number" id="e_roll" value="${r.roll}" min="0" oninput="if(this.value<0)this.value=0"></div>
-    <div class="form-group"><label>Status</label><select id="e_status">${['Pending', 'Testing', 'Approved', 'Rejected', 'Returned'].map(s => `<option ${s === r.status ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Status</label><select id="e_status">${['Pending', 'Testing', 'Approved', 'Hold', 'Rejected', 'Returned'].map(s => `<option ${s === r.status ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}</select></div>
     <div class="form-group"><label>Location</label><input id="e_location" value="${escapeHtml(r.location) || ''}"></div>
     <div class="form-group wide"><label>Remark</label><input id="e_remark" value="${escapeHtml(r.remark) || ''}" oninput="this.value=sanitize(this.value).toUpperCase()"></div>
   </div>`;
