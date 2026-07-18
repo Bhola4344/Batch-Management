@@ -1567,12 +1567,11 @@
         </div>
 
         <div class="card">
-          <div class="card-title">📋 Receiving Log <span id="entryCount"
-              style="color:var(--accent);font-size:12px;margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600"></span>
-            <button class="btn btn-orange btn-sm" onclick="openBatchMailModal()">📧 Send Mail</button>
-            <button class="btn btn-secondary btn-sm" id="recToggleBtn" onclick="toggleTable('rec')"
-              style="margin-left:8px">🙈 Hide</button>
-          </div>
+         <div class="card-title">📋 Receiving Log
+  <button class="btn btn-orange btn-sm" onclick="openBatchMailModal()" style="margin-left:auto">📧 Send Mail</button>
+  <button class="btn btn-secondary btn-sm" id="recToggleBtn" onclick="toggleTable('rec')"
+    style="margin-left:8px">🙈 Hide</button>
+</div>
           <div id="recContent">
             <div class="search-bar">
               <div class="form-group"><label>Search</label><input type="text" id="recSearch"
@@ -1747,11 +1746,10 @@
         </div>
 
         <div class="card">
-          <div class="card-title">📋 Issue Log <span id="issueCount"
-              style="color:var(--accent);font-size:12px;margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600"></span>
-            <button class="btn btn-secondary btn-sm" id="issueToggleBtn" onclick="toggleTable('issue')"
-              style="margin-left:8px">🙈 Hide</button>
-          </div>
+         <div class="card-title">📋 Issue Log
+  <button class="btn btn-secondary btn-sm" id="issueToggleBtn" onclick="toggleTable('issue')"
+    style="margin-left:auto">🙈 Hide</button>
+</div>
           <div id="issueContent">
             <div class="search-bar">
               <div class="form-group"><label>Search</label><input type="text" id="issueSearch"
@@ -2267,7 +2265,6 @@
       const total = filtered.length;
       const maxPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
       if (recPage > maxPage) recPage = maxPage;
-      document.getElementById('entryCount').textContent = total ? `(${total} / ${receiving.length} entries)` : '';
       if (!receiving.length) { document.getElementById('alertReceiving').classList.add('show'); document.getElementById('receivingTableWrap').style.display = 'none'; document.getElementById('recPagination').innerHTML = ''; return }
       document.getElementById('alertReceiving').classList.remove('show'); document.getElementById('receivingTableWrap').style.display = '';
       if (total === 0) { body.innerHTML = '<tr><td colspan="12" class="empty-state">No matching records found.</td></tr>'; renderPagination('rec', 0, 0); return }
@@ -2945,7 +2942,6 @@
       const total = filtered.length;
       const maxPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
       if (issuePage > maxPage) issuePage = maxPage;
-      document.getElementById('issueCount').textContent = total ? `(${total} / ${issues.length} records)` : '';
       if (!issues.length) { document.getElementById('alertIssue').classList.add('show'); document.getElementById('issueTableWrap').style.display = 'none'; document.getElementById('issuePagination').innerHTML = ''; return }
       document.getElementById('alertIssue').classList.remove('show'); document.getElementById('issueTableWrap').style.display = '';
       if (total === 0) { body.innerHTML = '<tr><td colspan="12" class="empty-state">No matching records found.</td></tr>'; renderPagination('issue', 0, 0); return }
