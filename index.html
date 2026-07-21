@@ -47,19 +47,20 @@
     }
 
     .header {
-      background: linear-gradient(90deg, #4f46e5, #6366f1, #06b6d4);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 56px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
-      color: #fff
-    }
+  background: linear-gradient(90deg, #4f46e5, #6366f1, #06b6d4);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+  color: #fff;
+  border-radius: 0 0 20px 20px;
+}
 
     .logo {
       display: flex;
@@ -1377,6 +1378,7 @@
       <div class="tab active" onclick="switchTab('issue')">📤 Issue</div>
       <div class="tab" onclick="switchTab('receiving')">📥 Receiving</div>
       <div class="tab" onclick="switchTab('iqc')">🔬 Under IQC</div>
+<div class="tab" onclick="switchTab('hold')">⏸️ Hold</div>
       <div class="tab" onclick="switchTab('rejected')">❌ Rejected</div>
       <div class="tab" onclick="switchTab('report')">📊 Report</div>
       <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
@@ -1850,10 +1852,8 @@
                     <th>Batch</th>
                     <th>SAP Code</th>
                     <th>Description</th>
-                    <th>Orig. Qty</th>
-                    <th>Orig. Roll</th>
-                    <th>Curr. Qty</th>
-                    <th>Curr. Roll</th>
+                    <th>Qty(Kg)</th>
+		    <th>Roll(Nos)</th>
                     <th>Location</th>
                     <th>Remark</th>
                     <th>Return Status</th>
@@ -1868,6 +1868,53 @@
         </div>
       </div>
     </div>
+
+<!-- ═══ HOLD TAB ═══ -->
+<div class="tab-panel" id="tab-hold">
+  <div class="main">
+    <div class="card">
+      <div class="card-title">⏸️ Hold Batch List <span id="holdCount"
+          style="color:var(--yellow);font-size:12px;margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600"></span>
+        <button class="btn btn-secondary btn-sm" id="holdToggleBtn" onclick="toggleTable('hold')"
+          style="margin-left:8px">🙈 Hide</button>
+      </div>
+
+      <div id="holdContent">
+        <div class="search-bar">
+          <div class="form-group"><label>Search</label><input type="text" id="holdSearch"
+              placeholder="Batch / SAP / Description / Qty..." oninput="renderHoldTable()"></div>
+          <div class="form-group"><label>Date From</label><input type="text" id="holdDateFrom"
+              placeholder="dd-mm-yyyy" maxlength="10" oninput="autoDateSlash(this);renderHoldTable()"></div>
+          <div class="form-group"><label>Date To</label><input type="text" id="holdDateTo" placeholder="dd-mm-yyyy"
+              maxlength="10" oninput="autoDateSlash(this);renderHoldTable()"></div>
+          <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;margin-bottom:1px"
+            onclick="clearHoldSearch()">✕ Clear</button>
+        </div>
+        <div id="alertHold" class="alert alert-info show">ℹ️ Koi batch Hold status me nahi hai.</div>
+        <div class="table-wrap" id="holdTableWrap" style="display:none">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Rec. Date</th>
+                <th>Doc No</th>
+                <th>Batch</th>
+                <th>SAP Code</th>
+                <th>Description</th>
+                <th>Qty(Kg)</th>
+                <th>Roll(Nos)</th>
+                <th>Location</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="holdBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="holdPagination"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
     <!-- ═══ REPORT TAB ═══ -->
     <div class="tab-panel" id="tab-report">
@@ -1986,7 +2033,7 @@
     let batchMailExcluded = new Set();
     let sessionToken = null, idleTimer = null;
     const PAGE_SIZE = 5;
-    let recPage = 1, issuePage = 1, rejPage = 1, iqcPage = 1;
+    let recPage = 1, issuePage = 1, rejPage = 1, iqcPage = 1, holdPage = 1;
     function sanitize(s) { return String(s).replace(/[<>"'&;]/g, '').substring(0, 200) }
     function escapeHtml(s) {
       return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -2012,6 +2059,7 @@
     function isApproved(r) { return String(r.status).toLowerCase().trim() === 'approved' }
     function isRejected(r) { return String(r.status).toLowerCase().trim() === 'rejected' }
     function isTesting(r) { return String(r.status).toLowerCase().trim() === 'testing' }
+function isHold(r) { return String(r.status).toLowerCase().trim() === 'hold' }
     function isIssuableForSpecial(r) { return isApproved(r) || isTesting(r) }
 
     function recalcRemaining(recArr, issueArr) {
@@ -2046,7 +2094,7 @@
     }
     function applyTableVisibility() {
       const state = loadTableVisibility();
-      ['rec', 'issue', 'rej', 'recForm', 'issueForm'].forEach(key => {
+      ['rec', 'issue', 'rej', 'hold', 'recForm', 'issueForm'].forEach(key => {
         const visible = state[key] !== false;
         const content = document.getElementById(key + 'Content');
         const btn = document.getElementById(key + 'ToggleBtn');
@@ -2152,7 +2200,7 @@
         issues = (resp.issues || []).map(normalizeIssue);
         receiving = recalcRemaining(receiving, issues);
         updateGsStatus(true);
-        renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable(); populateSapDropdown(); setBatchNo();
+        renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable(); renderHoldTable(); populateSapDropdown(); setBatchNo();
         if (!initial) showToast('✅ Data refreshed — ' + receiving.length + ' receiving, ' + issues.length + ' issues');
       } catch (e) { updateGsStatus(false, true); showToast('❌ Sheet reach nahi ho rahi: ' + e.message, 'error') }
       finally { hideLoader() }
@@ -2190,14 +2238,16 @@
     function switchTab(name) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      const idx = { issue: 0, receiving: 1, iqc: 2, rejected: 3, report: 4, settings: 5 }[name];
+      const idx = { issue: 0, receiving: 1, iqc: 2, hold: 3, rejected: 4, report: 5, settings: 6 }[name];
       document.querySelectorAll('.tab')[idx].classList.add('active');
       document.getElementById('tab-' + name).classList.add('active');
       if (name === 'issue') populateSapDropdown();
       if (name === 'iqc') renderIQCTable();
       if (name === 'rejected') renderRejectedTable();
+      if (name === 'hold') renderHoldTable();
       closeSidebar();
     }
+
     function setTodayDates() { const d = todayStr(); document.getElementById('recDate').value = d; document.getElementById('issueDate').value = d }
     function getNextBatchNo() {
       if (!receiving.length) return 'B-0001';
@@ -2256,7 +2306,7 @@
         const resp = await apiCall('addEntry', { recDate, docNumber, sapCode, description, qty, roll, status, location, remark });
         if (resp.status === 'ok') {
           receiving = [normalizeReceiving(resp.entry), ...receiving];
-          renderReceivingTable(); renderRejectedTable(); renderIQCTable(); populateSapDropdown();
+          renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable(); renderHoldTable(); populateSapDropdown();
           clearForm();
           showToast('✅ Entry add hui — Batch ' + resp.batchNo);
           updateGsStatus(true);
@@ -2332,7 +2382,7 @@
     function renderPagination(key, total, maxPage) {
       const container = document.getElementById(key + 'Pagination');
       if (total === 0 || maxPage <= 1) { container.innerHTML = ''; return }
-      const page = key === 'rec' ? recPage : key === 'issue' ? issuePage : key === 'iqc' ? iqcPage : rejPage;
+      const page = key === 'rec' ? recPage : key === 'issue' ? issuePage : key === 'iqc' ? iqcPage : key === 'hold' ? holdPage : rejPage;
       const start = (page - 1) * PAGE_SIZE + 1, end = Math.min(page * PAGE_SIZE, total);
       let html = `<span class="pg-info">${start}-${end} / ${total}</span>`;
       html += `<button class="pg-btn" onclick="changePage('${key}',${page - 1})" ${page <= 1 ? 'disabled' : ''}>Pre</button>`;
@@ -2350,13 +2400,16 @@
       if (key === 'rec') { recPage = page; renderReceivingTable() }
       else if (key === 'issue') { issuePage = page; renderIssueTable() }
       else if (key === 'iqc') { iqcPage = page; renderIQCTable() }
+      else if (key === 'hold') { holdPage = page; renderHoldTable() }
       else { rejPage = page; renderRejectedTable() }
     }
+
     function clearRecSearch() { ['recSearch', 'recDateFrom', 'recDateTo'].forEach(id => document.getElementById(id).value = ''); document.getElementById('recStatusFilter').value = ''; recPage = 1; renderReceivingTable() }
     function clearIssueSearch() { ['issueSearch', 'issueDateFrom', 'issueDateTo'].forEach(id => document.getElementById(id).value = ''); document.getElementById('issueTypeFilter').value = ''; issuePage = 1; renderIssueTable() }
     function clearRejSearch() { ['rejSearch', 'rejDateFrom', 'rejDateTo'].forEach(id => document.getElementById(id).value = ''); document.getElementById('rejReturnedFilter').value = ''; rejPage = 1; renderRejectedTable() }
 
     function clearIQCSearch() { ['iqcSearch', 'iqcDateFrom', 'iqcDateTo'].forEach(id => document.getElementById(id).value = ''); iqcPage = 1; renderIQCTable() }
+function clearHoldSearch() { ['holdSearch', 'holdDateFrom', 'holdDateTo'].forEach(id => document.getElementById(id).value = ''); holdPage = 1; renderHoldTable() }
 
     function getFilteredIQC() {
       const q = (document.getElementById('iqcSearch').value || '').toLowerCase();
@@ -2403,11 +2456,12 @@
       <td class="mono">${fmtNum(r.roll)}</td>
       <td>${escapeHtml(r.location) || '—'}</td>
       <td>
-        <div class="action-btns">
-          <button class="btn btn-sm" style="background:#f0fdf4;border:1px solid #86efac;color:#166534" onclick="openIQCStatusModal(${globalIdx},'Approved')">✅ Approve</button>
-          <button class="btn btn-sm" style="background:#fef2f2;border:1px solid #fca5a5;color:#991b1b" onclick="openIQCStatusModal(${globalIdx},'Rejected')">❌ Reject</button>
-        </div>
-      </td>`;
+  <div class="action-btns">
+    <button class="btn btn-sm" style="background:#f0fdf4;border:1px solid #86efac;color:#166534" onclick="openIQCStatusModal(${globalIdx},'Approved')">✅ Approve</button>
+    <button class="btn btn-sm" style="background:#fef2f2;border:1px solid #fca5a5;color:#991b1b" onclick="openIQCStatusModal(${globalIdx},'Rejected')">❌ Reject</button>
+    <button class="btn btn-sm" style="background:#f0fdf4;border:1px solid #86efac;color:#166534" onclick="openIQCSticker(${globalIdx})">🏷️ Sticker</button>
+  </div>
+</td>`;
         body.appendChild(tr);
       });
       renderPagination('iqc', total, maxPage);
@@ -2452,13 +2506,77 @@
       isSaving = false; btn.disabled = false;
       if (ok) {
         receiving = recalced;
-        renderReceivingTable(); renderRejectedTable(); renderIQCTable(); populateSapDropdown();
+        renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable(); renderHoldTable(); populateSapDropdown();
         closeModal('iqcStatusModal');
         showToast(`✅ Batch ${r.batchNo} ab ${newStatus} hai`);
       } else {
         btn.textContent = newStatus === 'Approved' ? '✅ Yes, Approve' : '❌ Yes, Reject';
       }
     }
+
+function getFilteredHold() {
+  const q = (document.getElementById('holdSearch').value || '').toLowerCase();
+  const df = document.getElementById('holdDateFrom').value;
+  const dt = document.getElementById('holdDateTo').value;
+  const dtFrom = df && isValidDate(df) ? parseDMY(df) : null;
+  const dtTo = dt && isValidDate(dt) ? parseDMY(dt) : null;
+  return receiving.filter(r => {
+    if (!isHold(r)) return false;
+    if (q && !([r.batchNo, r.sapCode, r.description, r.docNumber, r.location, r.remark || '', String(r.qty)].join(' ').toLowerCase().includes(q))) return false;
+    const rd = parseDMY(dateToDMY(r.recDate));
+    if (dtFrom && rd && rd < dtFrom) return false;
+    if (dtTo && rd && rd > dtTo) return false;
+    return true;
+  });
+}
+
+function renderHoldTable() {
+  const body = document.getElementById('holdBody'); body.innerHTML = '';
+  const filtered = getFilteredHold();
+  const total = filtered.length;
+  const allHold = receiving.filter(r => isHold(r)).length;
+  const maxPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (holdPage > maxPage) holdPage = maxPage;
+  document.getElementById('holdCount').textContent = allHold ? `(${total} shown / ${allHold} total on hold)` : '';
+  if (!allHold) { document.getElementById('alertHold').classList.add('show'); document.getElementById('holdTableWrap').style.display = 'none'; document.getElementById('holdPagination').innerHTML = ''; return }
+  document.getElementById('alertHold').classList.remove('show'); document.getElementById('holdTableWrap').style.display = '';
+  if (total === 0) { body.innerHTML = '<tr><td colspan="10" class="empty-state">No matching hold records found.</td></tr>'; renderPagination('hold', 0, 0); return }
+  const start = (holdPage - 1) * PAGE_SIZE, end = Math.min(start + PAGE_SIZE, total);
+  filtered.slice(start, end).forEach((r, i) => {
+    const globalIdx = receiving.indexOf(r);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="mono">${total - start - i}</td>
+  <td class="mono">${dateToDMY(r.recDate) || '—'}</td>
+  <td>${escapeHtml(r.docNumber) || '—'}</td>
+  <td class="mono" style="color:var(--accent2)">
+<span class="batch-tip" onclick="toggleTip(this,event)">${escapeHtml(r.batchNo)}
+<span class="tip-box">${escapeHtml(r.remark) || 'No remark'}</span>
+</span>
+</td>
+  <td class="mono" style="color:var(--yellow)">${escapeHtml(r.sapCode)}</td>
+  <td style="max-width:160px">${escapeHtml(r.description)}</td>
+ <td class="mono">${fmtKg(r.qty)}<small style="color:#5b21b6"> (rem:${fmtKg(r.remainQty)})</small></td>
+  <td class="mono">${fmtNum(r.roll)}<small style="color:#5b21b6"> (rem:${fmtNum(r.remainRoll)})</small></td>
+  <td>${escapeHtml(r.location) || '—'}</td>
+  <td>
+    <div class="action-btns">
+      <button class="btn btn-sm" style="background:#f0fdf4;border:1px solid #86efac;color:#166534" onclick="openIQCStatusModal(${globalIdx},'Approved')">✅ Approve</button>
+      <button class="btn btn-sm" style="background:#fef2f2;border:1px solid #fca5a5;color:#991b1b" onclick="openIQCStatusModal(${globalIdx},'Rejected')">❌ Reject</button>
+      <button class="btn btn-sm" style="background:#f0fdf4;border:1px solid #86efac;color:#166534" onclick="openHoldSticker(${globalIdx})">🏷️ Sticker</button>
+    </div>
+  </td>`;
+    body.appendChild(tr);
+  });
+  renderPagination('hold', total, maxPage);
+}
+
+function openHoldSticker(idx) {
+  generateHoldSticker(receiving[idx]);
+}
+
+function openIQCSticker(idx) {
+  generateIQCSticker(receiving[idx]);
+}
 
     function badgeHtml(s) {
       const c = { Pending: 'badge-pending', Testing: 'badge-testing', Approved: 'badge-approved', Rejected: 'badge-rejected', Returned: 'badge-returned', Hold: 'badge-hold' };
@@ -2554,7 +2672,7 @@
       isSaving = true; btn.disabled = true; btn.textContent = '⏳ Saving...';
       const ok = await persist(recalced, issues, 'Changes save ho rahi hain...');
       isSaving = false; btn.disabled = false; btn.textContent = '💾 Save';
-      if (ok) { receiving = recalced; renderReceivingTable(); renderRejectedTable(); renderIQCTable(); populateSapDropdown(); closeModal('editModal'); showToast('✅ Entry update ho gayi') }
+      if (ok) { receiving = recalced; renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable(); renderHoldTable(); populateSapDropdown(); closeModal('editModal'); showToast('✅ Entry update ho gayi') }
     }
 
     function openIssueEdit(idx) {
@@ -2580,7 +2698,7 @@
       flatpickr('#ei_issueDate', fpConfig);
     }
 
-    async function saveIssueEdit() {
+   async function saveIssueEdit() {
       if (isSaving) { showToast('⏳ Wait karo', 'warn'); return }
       const orig = issues[editIssueIndex];
       const dv = document.getElementById('ei_issueDate').value.trim();
@@ -2612,7 +2730,7 @@
       isSaving = false; btn.disabled = false; btn.textContent = '💾 Save';
       if (ok) {
         issues = newI; receiving = recalced;
-        renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable();
+        renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable(); renderHoldTable();
         const sap = document.getElementById('issueSapCode').value;
         if (sap) refreshStockInfo(sap);
         closeModal('editIssueModal');
@@ -2682,7 +2800,7 @@
       document.getElementById('cancelIssueModal').classList.add('show');
     }
 
-    async function confirmCancelIssue() {
+   async function confirmCancelIssue() {
       if (pendingCancelIssueIdx === null) return;
       if (isSaving) { showToast('⏳ Wait karo', 'warn'); return }
       const newI = issues.filter((_, i) => i !== pendingCancelIssueIdx);
@@ -2694,7 +2812,7 @@
       isSaving = false; btn.disabled = false; btn.textContent = '✅ Yes, Cancel This Issue';
       if (ok) {
         issues = newI; receiving = recalced;
-        renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable();
+        renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable(); renderHoldTable();
         const sap = document.getElementById('issueSapCode').value;
         if (sap) refreshStockInfo(sap);
         closeModal('cancelIssueModal');
@@ -2732,7 +2850,7 @@
       document.getElementById('rejectedCount').textContent = allRej ? `(${total} shown / ${allRej} total rejected)` : '';
       if (!allRej) { document.getElementById('alertRejected').classList.add('show'); document.getElementById('rejectedTableWrap').style.display = 'none'; document.getElementById('rejPagination').innerHTML = ''; return }
       document.getElementById('alertRejected').classList.remove('show'); document.getElementById('rejectedTableWrap').style.display = '';
-      if (total === 0) { body.innerHTML = '<tr><td colspan="13" class="empty-state">No matching rejected records found.</td></tr>'; renderPagination('rej', 0, 0); return }
+      if (total === 0) { body.innerHTML = '<tr><td colspan="12" class="empty-state">No matching rejected records found.</td></tr>'; renderPagination('rej', 0, 0); return }
       const start = (rejPage - 1) * PAGE_SIZE, end = Math.min(start + PAGE_SIZE, total);
       filtered.slice(start, end).forEach((r, i) => {
         const globalIdx = receiving.indexOf(r);
@@ -2752,10 +2870,8 @@
 </td>
       <td class="mono" style="color:var(--yellow)">${escapeHtml(r.sapCode)}</td>
       <td style="max-width:140px;font-size:11px">${escapeHtml(r.description)}</td>
-     <td class="mono">${fmtKg(r.origQty || r.qty)}</td>
-<td class="mono">${fmtNum(r.origRoll || r.roll)}</td>
-<td class="mono" style="color:${returned ? 'var(--red)' : 'var(--text)'}">${fmtKg(r.remainQty)}</td>
-<td class="mono" style="color:${returned ? 'var(--red)' : 'var(--text)'}">${fmtNum(r.remainRoll)}</td>
+     <td class="mono">${fmtKg(r.origQty || r.qty)}<small style="color:#5b21b6"> (rem:${fmtKg(r.remainQty)})</small></td>
+<td class="mono">${fmtNum(r.origRoll || r.roll)}<small style="color:#5b21b6"> (rem:${fmtNum(r.remainRoll)})</small></td>
       <td>${escapeHtml(r.location) || '—'}</td>
       <td style="color:var(--text3);font-size:11px">${escapeHtml(r.remark) || '—'}</td>
       <td>${retBadge}</td>
@@ -2787,7 +2903,7 @@
       document.getElementById('partyModal').classList.add('show');
     }
 
-    async function confirmSendToParty() {
+   async function confirmSendToParty() {
       if (pendingPartyIdx === null) return;
       if (isSaving) { showToast('⏳ Wait karo', 'warn'); return }
       const newR = [...receiving];
@@ -2806,7 +2922,7 @@
       isSaving = false; btn.disabled = false; btn.textContent = '✅ Confirm Return to Party';
       if (ok) {
         receiving = recalced;
-        renderReceivingTable(); renderRejectedTable(); renderIQCTable();
+        renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable(); renderHoldTable();
         closeModal('partyModal');
         showToast(`✅ Batch ${r.batchNo} return ho gayi — Return Stock: ${r.returnStock}, Return Roll: ${r.returnRoll}`);
       }
@@ -2952,7 +3068,7 @@
       isSaving = true; btn.disabled = true; btn.textContent = '⏳ Saving...';
       const ok = await persist(recalced, newIssues, 'Issue sheet mein save ho raha hai...');
       isSaving = false; btn.disabled = false; btn.textContent = '✅ Process Issue';
-      if (ok) { receiving = recalced; issues = newIssues; renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable(); const sap2 = document.getElementById('issueSapCode').value; if (sap2) refreshStockInfo(sap2); clearIssueForm(); showToast(msg) }
+      if (ok) { receiving = recalced; issues = newIssues; renderReceivingTable(); renderIssueTable(); renderRejectedTable(); renderIQCTable(); renderHoldTable(); const sap2 = document.getElementById('issueSapCode').value; if (sap2) refreshStockInfo(sap2); clearIssueForm(); showToast(msg) }
     }
     function clearIssueForm() {
       ['issueSapCode', 'issueTo', 'issueQty', 'issueRoll', 'issueRemarks'].forEach(id => document.getElementById(id).value = '');
@@ -3276,8 +3392,8 @@ border:0.3mm dashed #ccc;
           ['Description :', escapeHtml(r.description) || '—', '7mm'],
           ['MIGO / Doc No. :', escapeHtml(r.docNumber) || '—', '6.5mm'],
           ['Rec. Date :', dateToDMY(r.recDate) || '—', '6.5mm'],
-          ['Qty :', fmtKg(r.origQty || r.qty) + ' Kg', '6.5mm'],
-          ['Roll :', (r.origRoll || r.roll) + ' Nos', '6.5mm'],
+          ['Qty :', fmtKg(r.origQty || r.qty) + ' Kg (rem: ' + fmtKg(r.remainQty) + ')', '6.5mm'],
+['Roll :', (r.origRoll || r.roll) + ' Nos (rem: ' + fmtNum(r.remainRoll) + ')', '6.5mm'],
           ['Location :', escapeHtml(r.location) || '—', '6.5mm'],
           ['Remark :', escapeHtml(r.remark) || '—', '6.5mm'],
         ].map(([label, val, sz], i) => `
@@ -3290,6 +3406,84 @@ border:0.3mm dashed #ccc;
   </div>`;
       document.getElementById('stickerModal').classList.add('show');
     }
+
+function generateHoldSticker(r) {
+  const area = document.getElementById('stickerPrintArea');
+  area.innerHTML = `
+<div style="
+width:210mm;height:297mm;
+box-sizing:border-box;
+padding:10mm;
+display:flex;flex-direction:column;
+font-family:Arial,Helvetica,sans-serif;
+background:#fff;color:#000;
+overflow:hidden;
+">
+<div class="keep-border" style="border:2px solid #000;text-align:center;padding:6mm 4mm;margin-bottom:6mm;">
+  <div style="font-size:13mm;font-weight:900;letter-spacing:2mm;line-height:1">HOLD BY USER</div>
+  <div style="font-size:5mm;font-weight:700;letter-spacing:1.5mm;margin-top:2mm;">DO NOT ISSUE</div>
+</div>
+
+<div class="keep-border" style="border:1.2px solid #000;">
+  ${[
+    ['Batch No. :', escapeHtml(r.batchNo), '9mm'],
+    ['SAP Code :', escapeHtml(r.sapCode), '8mm'],
+    ['Description :', escapeHtml(r.description) || '—', '7mm'],
+    ['MIGO / Doc No. :', escapeHtml(r.docNumber) || '—', '6.5mm'],
+    ['Rec. Date :', dateToDMY(r.recDate) || '—', '6.5mm'],
+    ['Qty :', fmtKg(r.qty) + ' Kg (rem: ' + fmtKg(r.remainQty) + ')', '6.5mm'],
+['Roll :', r.roll + ' Nos (rem: ' + fmtNum(r.remainRoll) + ')', '6.5mm'],
+    ['Location :', escapeHtml(r.location) || '—', '6.5mm'],
+    ['Remark :', escapeHtml(r.remark) || '—', '6.5mm'],
+  ].map(([label, val, sz], i) => `
+    <div style="display:flex;align-items:center;padding:2.6mm 5mm;${i > 0 ? 'border-top:1px solid #000;' : ''}">
+      <div style="width:50mm;font-size:4.2mm;font-weight:700;text-transform:uppercase;letter-spacing:.3mm;">${label}</div>
+      <div style="flex:1;font-size:${sz};font-weight:900;font-family:monospace;line-height:1.2">${val}</div>
+    </div>
+  `).join('')}
+</div>
+</div>`;
+  document.getElementById('stickerModal').classList.add('show');
+}
+
+function generateIQCSticker(r) {
+  const area = document.getElementById('stickerPrintArea');
+  area.innerHTML = `
+<div style="
+width:210mm;height:297mm;
+box-sizing:border-box;
+padding:10mm;
+display:flex;flex-direction:column;
+font-family:Arial,Helvetica,sans-serif;
+background:#fff;color:#000;
+overflow:hidden;
+">
+<div class="keep-border" style="border:2px solid #000;text-align:center;padding:6mm 4mm;margin-bottom:6mm;">
+  <div style="font-size:13mm;font-weight:900;letter-spacing:2mm;line-height:1">UNDER IQC</div>
+  <div style="font-size:5mm;font-weight:700;letter-spacing:1.5mm;margin-top:2mm;">TESTING — DO NOT ISSUE</div>
+</div>
+
+<div class="keep-border" style="border:1.2px solid #000;">
+  ${[
+    ['Batch No. :', escapeHtml(r.batchNo), '9mm'],
+    ['SAP Code :', escapeHtml(r.sapCode), '8mm'],
+    ['Description :', escapeHtml(r.description) || '—', '7mm'],
+    ['MIGO / Doc No. :', escapeHtml(r.docNumber) || '—', '6.5mm'],
+    ['Rec. Date :', dateToDMY(r.recDate) || '—', '6.5mm'],
+    ['Qty :', fmtKg(r.qty) + ' Kg (rem: ' + fmtKg(r.remainQty) + ')', '6.5mm'],
+    ['Roll :', r.roll + ' Nos (rem: ' + fmtNum(r.remainRoll) + ')', '6.5mm'],
+    ['Location :', escapeHtml(r.location) || '—', '6.5mm'],
+    ['Remark :', escapeHtml(r.remark) || '—', '6.5mm'],
+  ].map(([label, val, sz], i) => `
+    <div style="display:flex;align-items:center;padding:2.6mm 5mm;${i > 0 ? 'border-top:1px solid #000;' : ''}">
+      <div style="width:50mm;font-size:4.2mm;font-weight:700;text-transform:uppercase;letter-spacing:.3mm;">${label}</div>
+      <div style="flex:1;font-size:${sz};font-weight:900;font-family:monospace;line-height:1.2">${val}</div>
+    </div>
+  `).join('')}
+</div>
+</div>`;
+  document.getElementById('stickerModal').classList.add('show');
+}
 
     function showToast(msg, type = 'success') {
       const wrap = document.getElementById('toastWrap');
@@ -3310,6 +3504,8 @@ border:0.3mm dashed #ccc;
     flatpickr('#rejDateTo', fpConfig);
     flatpickr('#iqcDateFrom', fpConfig);
     flatpickr('#iqcDateTo', fpConfig);
+flatpickr('#holdDateFrom', fpConfig);
+    flatpickr('#holdDateTo', fpConfig);
     flatpickr('#repDateFrom', fpConfig);
     flatpickr('#repDateTo', fpConfig);
     flatpickr('#batchMailDate', fpConfig);
