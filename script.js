@@ -160,14 +160,32 @@
       }
       ['click', 'keydown', 'mousemove'].forEach(ev => document.addEventListener(ev, () => { if (sessionToken) resetIdleTimer() }));
 
-      async function apiCall(action, payload = {}) {
-        const res = await fetch(CONFIG.WEBAPP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ token: CONFIG.API_TOKEN, sessionToken, action, ...payload }) });
-        const data = await res.json();
+      function apiCall(action, payload = {}) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', CONFIG.WEBAPP_URL, true);
+    xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+
+    xhr.onload = function () {
+      try {
+        const data = JSON.parse(xhr.responseText);
         if (data.status === 'session_expired') {
           forceLogout('Session expire ho gaya, dobara login karo');
         }
-        return data;
+        resolve(data);
+      } catch (e) {
+        // Response JSON nahi tha — matlab kuch galat response mila (jaise "Forbidden")
+        reject(new Error('Server se galat response mila: ' + xhr.responseText.substring(0, 100)));
       }
+    };
+
+    xhr.onerror = function () {
+      reject(new Error('Network error — request fail ho gaya'));
+    };
+
+    xhr.send(JSON.stringify({ token: CONFIG.API_TOKEN, sessionToken, action, ...payload }));
+  });
+}
       async function refreshFromSheet(initial = false) {
         showLoader();
         try {
