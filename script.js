@@ -1,4 +1,4 @@
-      const CONFIG = { WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbw-lLKVVs6Eopiur7dHY7Mx5TCROM2EiqpaJJIJypPu541KNfmjm1xfqAyHjfMWXEZYiA/exec', API_TOKEN: 'a8f3k9x2m4p7q1w5e6r8t3y9u2i4o7' };
+      const CONFIG = { WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbzEwVkk1Grwu_QGkb1yoP5e8Clr20nK4AYDHJ0rQ18g7cacOi6S7DrhfrPm3tEDPK7VOw/exec', API_TOKEN: 'a8f3k9x2m4p7q1w5e6r8t3y9u2i4o7' };
       let receiving = [], issues = [], editIndex = null, editIssueIndex = null, isSaving = false, pendingPartyIdx = null, pendingCancelIssueIdx = null, pendingIQCIdx = null, pendingIQCStatus = null;
       let batchMailExcluded = new Set();
       let sessionToken = null, idleTimer = null;
